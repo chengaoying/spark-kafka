@@ -9,6 +9,8 @@ import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFunction;
+import org.apache.spark.api.java.function.VoidFunction;
+import org.apache.spark.sql.DataFrame;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.hive.HiveContext;
 import org.apache.spark.streaming.Durations;
@@ -43,8 +45,13 @@ public class KafkaToSparkStreaming {
         if (args.length > 0 && "local".equals(args[0])) {
     		sparkConf.setMaster("local[*]");
     	}
+        //sparkConf.set("spark.streaming.backpressure.enabled", "true");
+        //sparkConf.set("spark.sql.parquet.compression.codec", "snappy");
+        //sparkConf.set("spark.sql.parquet.mergeSchema", "true");
+        //sparkConf.set("spark.sql.parquet.binaryAsString", "true");
         
         JavaStreamingContext jssc = new JavaStreamingContext(sparkConf, Durations.seconds(5));
+        final HiveContext sqlContext = new HiveContext(jssc.sparkContext()); 
 
         // 构建kafka参数map
         // 主要要放置的就是，你要连接的kafka集群的地址（broker集群的地址列表）
@@ -80,9 +87,19 @@ public class KafkaToSparkStreaming {
         		}
         );
         
-        logDStream.print();
+        logDStream.foreachRDD(new VoidFunction<JavaRDD<String>>() {  
+            private static final long serialVersionUID = 1L;  
+  
+            public void call(JavaRDD<String> t) throws Exception {  
+                if(t.count() < 1) return ;  
+                DataFrame df = sqlContext.read().json(t);  
+                df.show();  
+            }  
+        });  
         
-        logDStream.dstream().repartition(1).saveAsTextFiles("hdfs://192.168.0.224:8020/user/hive/data/", "kafkaData");
+        //logDStream.print();
+        
+        //logDStream.dstream().saveAsTextFiles("hdfs://192.168.0.224:8020/user/hive/data/", "kafkaData");
         
         // 创建JavaSparkContext
      	//JavaSparkContext sc = new JavaSparkContext(sparkConf);
