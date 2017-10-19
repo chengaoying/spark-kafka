@@ -82,7 +82,7 @@ public class KafkaToSparkStreaming {
         
         logDStream.print();
         
-        logDStream.dstream().saveAsTextFiles("/user/hive/data/", "kafkaData");
+        logDStream.dstream().saveAsTextFiles("hdfs://192.168.0.224:8020/user/hive/data/", "kafkaData");
         
         // 创建JavaSparkContext
      	//JavaSparkContext sc = new JavaSparkContext(sparkConf);
