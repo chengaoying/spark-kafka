@@ -80,6 +80,10 @@ public class KafkaToSparkStreaming {
         		}
         );
         
+        logDStream.print();
+        
+        logDStream.dstream().saveAsTextFiles("/user/hive/data/", "kafkaData");
+        
         // 创建JavaSparkContext
      	//JavaSparkContext sc = new JavaSparkContext(sparkConf);
      	// 创建HiveContext
@@ -99,9 +103,6 @@ public class KafkaToSparkStreaming {
      				
 		});*/
         
-        
-     	
-        logDStream.print();
 
         jssc.start();
         jssc.awaitTermination();
