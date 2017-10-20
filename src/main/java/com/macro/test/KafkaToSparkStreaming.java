@@ -25,18 +25,19 @@ public class KafkaToSparkStreaming {
 	
 	protected static Log log = LogFactory.getLog(KafkaToSparkStreaming.class);
 	
-	//protected static String hdfs_uri = "hdfs://192.168.0.224:8020";
-	//protected static String broker_list = "192.168.0.221:9092,192.168.0.222:9092,192.168.0.223:9092";
+	protected static String hdfs_uri = "hdfs://192.168.0.224:8020";
+	protected static String broker_list = "192.168.0.221:9092,192.168.0.222:9092,192.168.0.223:9092";
 
     public static void main(String[] args) throws Exception {
     	
-    	if (args.length < 2) {
-    		System.err.println("Usage: KafkaToSparkStreaming <hdfs_uri> <broker_list>");
+    	/*if (args.length < 3) {
+    		System.err.println("Usage: KafkaToSparkStreaming <hdfs_uri> <broker_list> <topic1,topic2>");
     		System.exit(1);
     	}
-    	
     	String hdfs_uri = args[0];
     	String broker_list = args[1];
+    	String topic = args[2];
+    	*/
     	
     	log.warn("启动接收Kafka数据测试程序");
     	
@@ -88,20 +89,6 @@ public class KafkaToSparkStreaming {
         			
         		}
         );
-        
-        /*logDStream.foreachRDD(new VoidFunction<JavaRDD<String>>() {  
-            private static final long serialVersionUID = 1L;  
-  
-            public void call(JavaRDD<String> t) throws Exception {  
-                if(t.isEmpty()){
-                	log.warn("---接收到空行---");
-                }else{
-                	DataFrame df = sqlContext.read().json(t);  
-                	df.show();
-                	t.saveAsTextFile("hdfs://192.168.0.224:8020/tmp/data/test_t");
-                }
-            }  
-        });  */
         
         log.warn("---数据保存至HDFS---");
         //logDStream.print();
