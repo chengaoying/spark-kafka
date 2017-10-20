@@ -6,6 +6,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.function.FlatMapFunction;
+import org.apache.spark.api.java.function.Function;
 import org.apache.spark.sql.hive.HiveContext;
 import org.apache.spark.streaming.Durations;
 import org.apache.spark.streaming.api.java.JavaDStream;
@@ -92,8 +93,21 @@ public class KafkaToSparkStreaming {
         		}
         );
         
+        //条件过滤：2015-11-30 12:00:00至2015-11-30 13:59:59
+        logDStream.filter(new Function<String, Boolean>() {
+			@Override
+			public Boolean call(String str) throws Exception {
+				String[] ss = str.split(",");
+				if(ss.length > 1 
+						&& DateUtils.isInTimePeriod(ss[0], "2015-11-30 11:59:59", "2015-11-30 14:00:00")){
+					return true;
+				}
+				return false;
+			}
+		});
+        
         log.warn("---数据保存至HDFS---");
-        //logDStream.print();
+        logDStream.print();
         logDStream.dstream().saveAsTextFiles(hdfs_uri + "/tmp/data/kafka/", "kafkaData");
         
         jssc.start();
