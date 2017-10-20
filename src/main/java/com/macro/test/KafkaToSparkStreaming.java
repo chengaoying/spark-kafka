@@ -33,6 +33,8 @@ import static org.apache.hadoop.yarn.webapp.hamlet.HamletSpec.Media.print;
  *
  */
 public class KafkaToSparkStreaming {
+	
+	
 
     public static void main(String[] args) throws Exception {
     	
@@ -50,8 +52,11 @@ public class KafkaToSparkStreaming {
         //sparkConf.set("spark.sql.parquet.mergeSchema", "true");
         //sparkConf.set("spark.sql.parquet.binaryAsString", "true");
         
+        final String checkpointDir = "hdfs://192.168.0.224:8020/streaming_checkpoint";
+        
         JavaStreamingContext jssc = new JavaStreamingContext(sparkConf, Durations.seconds(5));
         final HiveContext sqlContext = new HiveContext(jssc.sparkContext()); 
+        jssc.checkpoint(checkpointDir);
 
         // 构建kafka参数map
         // 主要要放置的就是，你要连接的kafka集群的地址（broker集群的地址列表）
@@ -91,9 +96,14 @@ public class KafkaToSparkStreaming {
             private static final long serialVersionUID = 1L;  
   
             public void call(JavaRDD<String> t) throws Exception {  
-                if(t.count() < 1) return ;  
-                DataFrame df = sqlContext.read().json(t);  
-                df.show();  
+                if(t.isEmpty()){
+                	
+                }else{
+                	DataFrame df = sqlContext.read().json(t);  
+                	df.show();
+                	
+                	t.saveAsTextFile("hdfs://192.168.0.224:8020/tmp/data/test_t");
+                }
             }  
         });  
         
