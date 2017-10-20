@@ -25,22 +25,25 @@ public class KafkaToSparkStreaming {
 	
 	protected static Log log = LogFactory.getLog(KafkaToSparkStreaming.class);
 	
-	protected static String hdfs_uri = "hdfs://192.168.0.224:8020";
-	protected static String broker_list = "192.168.0.221:9092,192.168.0.222:9092,192.168.0.223:9092";
+	//protected static String hdfs_uri = "hdfs://192.168.0.224:8020";
+	//protected static String broker_list = "192.168.0.221:9092,192.168.0.222:9092,192.168.0.223:9092";
 
     public static void main(String[] args) throws Exception {
     	
-    	/*if (args.length < 1) {
-    		System.err.println("Usage: KafkaToSparkStreaming <master>");
+    	if (args.length < 2) {
+    		System.err.println("Usage: KafkaToSparkStreaming <hdfs_uri> <broker_list>");
     		System.exit(1);
-    	}*/
+    	}
+    	
+    	String hdfs_uri = args[0];
+    	String broker_list = args[1];
     	
     	log.warn("启动接收Kafka数据测试程序");
     	
         SparkConf sparkConf = new SparkConf().setAppName("KafkaNetworkWordCount");
-        if (args.length > 0 && "local".equals(args[0])) {
+        /*if (args.length > 0 && "local".equals(args[0])) {
     		sparkConf.setMaster("local[*]");
-    	}
+    	}*/
         //sparkConf.set("spark.streaming.backpressure.enabled", "true");
         //sparkConf.set("spark.sql.parquet.compression.codec", "snappy");
         //sparkConf.set("spark.sql.parquet.mergeSchema", "true");
