@@ -1,6 +1,9 @@
 package com.macro.test;
 
 import kafka.serializer.StringDecoder;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
@@ -33,6 +36,8 @@ import static org.apache.hadoop.yarn.webapp.hamlet.HamletSpec.Media.print;
  *
  */
 public class KafkaToSparkStreaming {
+	
+	protected static Log log = LogFactory.getLog(KafkaToSparkStreaming.class);
 
     public static void main(String[] args) throws Exception {
     	
@@ -41,7 +46,7 @@ public class KafkaToSparkStreaming {
     		System.exit(1);
     	}*/
     	
-    	System.out.print("---------begin---------------------");
+    	log.warn("启动接收Kafka数据测试程序");
     	
         SparkConf sparkConf = new SparkConf().setAppName("KafkaNetworkWordCount");
         if (args.length > 0 && "local".equals(args[0])) {
@@ -92,45 +97,24 @@ public class KafkaToSparkStreaming {
         		}
         );
         
-        logDStream.foreachRDD(new VoidFunction<JavaRDD<String>>() {  
+        /*logDStream.foreachRDD(new VoidFunction<JavaRDD<String>>() {  
             private static final long serialVersionUID = 1L;  
   
             public void call(JavaRDD<String> t) throws Exception {  
                 if(t.isEmpty()){
-                	
+                	log.warn("---接收到空行---");
                 }else{
                 	DataFrame df = sqlContext.read().json(t);  
                 	df.show();
-                	
                 	t.saveAsTextFile("hdfs://192.168.0.224:8020/tmp/data/test_t");
                 }
             }  
-        });  
+        });  */
         
-        //logDStream.print();
+        log.warn("---数据保存至HDFS---");
+        logDStream.print();
+        logDStream.dstream().saveAsTextFiles("hdfs://192.168.0.224:8020/tmp/data/test_t/", "kafkaData");
         
-        //logDStream.dstream().saveAsTextFiles("hdfs://192.168.0.224:8020/user/hive/data/", "kafkaData");
-        
-        // 创建JavaSparkContext
-     	//JavaSparkContext sc = new JavaSparkContext(sparkConf);
-     	// 创建HiveContext
-     	//final HiveContext hiveContext = new HiveContext(jssc.sc().sc());
-     	
-     	//遍历
-     	/*logDStream.foreachRDD(
-     			new Function<JavaRDD<String>, Void>() {
-					private static final long serialVersionUID = -6208175829524293079L;
-
-					@Override
-					public Void call(JavaRDD<String> str) throws Exception {
-						String s = "INSERT INTO table1 VALUES(\"ss\",\"zz\")";
-						hiveContext.sql(s);
-						return null;
-					}
-     				
-		});*/
-        
-
         jssc.start();
         jssc.awaitTermination();
     }
