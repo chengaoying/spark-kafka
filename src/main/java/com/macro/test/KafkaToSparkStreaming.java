@@ -41,7 +41,7 @@ public class KafkaToSparkStreaming {
     	
     	log.warn("启动接收Kafka数据测试程序");
     	
-        SparkConf sparkConf = new SparkConf().setAppName("KafkaNetworkWordCount");
+        SparkConf sparkConf = new SparkConf().setAppName("KafkaToSparkStreaming");
         /*if (args.length > 0 && "local".equals(args[0])) {
     		sparkConf.setMaster("local[*]");
     	}*/
