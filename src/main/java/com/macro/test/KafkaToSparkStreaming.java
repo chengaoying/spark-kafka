@@ -61,6 +61,7 @@ public class KafkaToSparkStreaming {
         Map<String, String> kafkaParams = new HashMap<String, String>();
         kafkaParams.put("metadata.broker.list",broker_list);
         kafkaParams.put("group.id","test_group1");
+        kafkaParams.put("auto.offset.reset","earliest");
         //kafkaParams.put("kafka.ofset.reset","0");
         
         // 构建topic set
