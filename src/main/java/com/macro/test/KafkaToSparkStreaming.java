@@ -5,30 +5,16 @@ import kafka.serializer.StringDecoder;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.spark.SparkConf;
-import org.apache.spark.api.java.JavaPairRDD;
-import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.FlatMapFunction;
-import org.apache.spark.api.java.function.Function;
-import org.apache.spark.api.java.function.Function2;
-import org.apache.spark.api.java.function.PairFunction;
-import org.apache.spark.api.java.function.VoidFunction;
-import org.apache.spark.sql.DataFrame;
-import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.hive.HiveContext;
 import org.apache.spark.streaming.Durations;
 import org.apache.spark.streaming.api.java.JavaDStream;
-import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.api.java.JavaPairInputDStream;
-import org.apache.spark.streaming.api.java.JavaReceiverInputDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.apache.spark.streaming.kafka.KafkaUtils;
 import scala.Tuple2;
 
 import java.util.*;
-import java.util.regex.Pattern;
-
-import static org.apache.hadoop.yarn.webapp.hamlet.HamletSpec.Media.print;
 
 /**
  * 将kafka数据导入到hive表中
@@ -38,6 +24,9 @@ import static org.apache.hadoop.yarn.webapp.hamlet.HamletSpec.Media.print;
 public class KafkaToSparkStreaming {
 	
 	protected static Log log = LogFactory.getLog(KafkaToSparkStreaming.class);
+	
+	protected static String hdfs_uri = "hdfs://192.168.0.224:8020";
+	protected static String broker_list = "192.168.0.221:9092,192.168.0.222:9092,192.168.0.223:9092";
 
     public static void main(String[] args) throws Exception {
     	
@@ -57,16 +46,16 @@ public class KafkaToSparkStreaming {
         //sparkConf.set("spark.sql.parquet.mergeSchema", "true");
         //sparkConf.set("spark.sql.parquet.binaryAsString", "true");
         
-        final String checkpointDir = "hdfs://192.168.0.224:8020/tmp/streaming_checkpoint";
+        final String checkpointDir = hdfs_uri + "/tmp/streaming_checkpoint";
         
         JavaStreamingContext jssc = new JavaStreamingContext(sparkConf, Durations.seconds(5));
-        final HiveContext sqlContext = new HiveContext(jssc.sparkContext()); 
+        //final HiveContext sqlContext = new HiveContext(jssc.sparkContext()); 
         jssc.checkpoint(checkpointDir);
 
         // 构建kafka参数map
         // 主要要放置的就是，你要连接的kafka集群的地址（broker集群的地址列表）
         Map<String, String> kafkaParams = new HashMap<String, String>();
-        kafkaParams.put("metadata.broker.list","192.168.0.221:9092,192.168.0.222:9092,192.168.0.223:9092");
+        kafkaParams.put("metadata.broker.list",broker_list);
         //kafkaParams.put("kafka.ofset.reset","0");
         
         // 构建topic set
@@ -112,8 +101,8 @@ public class KafkaToSparkStreaming {
         });  */
         
         log.warn("---数据保存至HDFS---");
-        logDStream.print();
-        logDStream.dstream().saveAsTextFiles("hdfs://192.168.0.224:8020/tmp/data/test_t/", "kafkaData");
+        //logDStream.print();
+        logDStream.dstream().saveAsTextFiles(hdfs_uri + "/tmp/data/kafka/", "kafkaData");
         
         jssc.start();
         jssc.awaitTermination();
