@@ -60,6 +60,7 @@ public class KafkaToSparkStreaming {
         // 主要要放置的就是，你要连接的kafka集群的地址（broker集群的地址列表）
         Map<String, String> kafkaParams = new HashMap<String, String>();
         kafkaParams.put("metadata.broker.list",broker_list);
+        kafkaParams.put("group.id","test_group1");
         //kafkaParams.put("kafka.ofset.reset","0");
         
         // 构建topic set
