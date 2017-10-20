@@ -33,8 +33,6 @@ import static org.apache.hadoop.yarn.webapp.hamlet.HamletSpec.Media.print;
  *
  */
 public class KafkaToSparkStreaming {
-	
-	
 
     public static void main(String[] args) throws Exception {
     	
@@ -42,6 +40,8 @@ public class KafkaToSparkStreaming {
     		System.err.println("Usage: KafkaToSparkStreaming <master>");
     		System.exit(1);
     	}*/
+    	
+    	System.out.print("---------begin---------------------");
     	
         SparkConf sparkConf = new SparkConf().setAppName("KafkaNetworkWordCount");
         if (args.length > 0 && "local".equals(args[0])) {
@@ -52,7 +52,7 @@ public class KafkaToSparkStreaming {
         //sparkConf.set("spark.sql.parquet.mergeSchema", "true");
         //sparkConf.set("spark.sql.parquet.binaryAsString", "true");
         
-        final String checkpointDir = "hdfs://192.168.0.224:8020/streaming_checkpoint";
+        final String checkpointDir = "hdfs://192.168.0.224:8020/tmp/streaming_checkpoint";
         
         JavaStreamingContext jssc = new JavaStreamingContext(sparkConf, Durations.seconds(5));
         final HiveContext sqlContext = new HiveContext(jssc.sparkContext()); 
