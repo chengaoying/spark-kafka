@@ -28,10 +28,6 @@ public class KafkaToSparkStreaming {
 	
 	protected static String hdfs_uri = "hdfs://192.168.0.224:8020";
 	protected static String broker_list = "192.168.0.221:9092,192.168.0.222:9092,192.168.0.223:9092";
-	
-	//获取Kafka流数据的时间段
-	protected static String start_time = "2015-11-30 11:59:59";
-	protected static String end_time = "2015-11-30 14:00:00";
 
     public static void main(String[] args) throws Exception {
     	
