@@ -31,6 +31,7 @@ public class KafkaToSparkStreaming {
 	
     public static void main(String[] args) throws Exception {
     	
+    	log.warn("启动流处理测试程序");
     	/*if (args.length < 3) {
     		System.err.println("Usage: KafkaToSparkStreaming <hdfs_uri> <broker_list> <topic1,topic2>");
     		System.exit(1);
@@ -45,8 +46,6 @@ public class KafkaToSparkStreaming {
     	String kafka_topics = ConfigurationManager.getProperty("kafka.topics");
     	final String start_time = ConfigurationManager.getProperty("kafka.startTime");
     	final String end_time = ConfigurationManager.getProperty("kafka.endTime");
-    	
-    	log.warn("启动接收Kafka数据测试程序");
     	
         SparkConf sparkConf = new SparkConf().setAppName("KafkaToSparkStreaming");
         final String checkpointDir = hdfs_uri + "/tmp/streaming_checkpoint";
@@ -107,17 +106,12 @@ public class KafkaToSparkStreaming {
 				}
         );
         
-        //接收的数据总数
-        //log.warn("总共接收到数据为：");
-        //filterLogDStream.count();
-        
         //数据清洗：过滤时间不符合标准UTC时间、去重
-        
         
         
         log.warn("---数据保存至HDFS---");
         filterLogDStream.print();
-        //filterLogDStream.dstream().saveAsTextFiles(hdfs_uri + "/tmp/data/kafka/", "kafkaData");
+        filterLogDStream.dstream().saveAsTextFiles(hdfs_uri + "/tmp/data/kafka/", "kafkaData");
         
         jssc.start();
         jssc.awaitTermination();
