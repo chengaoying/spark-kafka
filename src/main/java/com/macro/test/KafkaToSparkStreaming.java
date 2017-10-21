@@ -90,7 +90,7 @@ public class KafkaToSparkStreaming {
                 topics);
         
         //将一条日志拆分诚多条（分隔符为";"）
-        JavaPairDStream<String,String> pairDStream = realTimeLogDStream.mapToPair(
+       /* JavaPairDStream<String,String> pairDStream = realTimeLogDStream.mapToPair(
     		new PairFunction<Tuple2<String,String>, String, String>() {
 				@Override
 				public Tuple2<String, String> call(Tuple2<String, String> t) throws Exception {
@@ -98,10 +98,28 @@ public class KafkaToSparkStreaming {
 					return new Tuple2<String,String>(ss[0],t._2);
 				}
 			}
-        );
+        );*/
+        
+        JavaPairDStream<String,String> pairDStream = realTimeLogDStream.flatMapToPair(
+        		new PairFlatMapFunction<Tuple2<String,String>, String, String>() {
+					private static final long serialVersionUID = -6814161825885679045L;
+
+					@Override
+					public Iterable<Tuple2<String, String>> call(Tuple2<String, String> t) throws Exception {
+						String[] ss = t._2.split(";");
+						List<Tuple2<String,String>> list = new ArrayList<Tuple2<String,String>>();
+						for (String str : ss) {
+							String[] s = str.split(",");
+							Tuple2<String,String> tuple = new Tuple2<String,String>(s[0],str);
+							list.add(tuple);
+						}
+						return list;
+					}
+				}
+        	);
         		
         		
-        		/*(
+        /*realTimeLogDStream.flatMap(
         		new FlatMapFunction<Tuple2<String,String>, String>() {
 					private static final long serialVersionUID = -4327021536484339309L;
 
@@ -110,7 +128,8 @@ public class KafkaToSparkStreaming {
 						return Arrays.asList(tuple2._2.split(";"));
 					}
         		}
-        	);*/
+        	)
+        ;*/
         pairDStream.print();
         
         /** 数据清洗：
