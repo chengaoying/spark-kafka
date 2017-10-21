@@ -11,7 +11,6 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
-import org.apache.spark.api.java.function.PairFlatMapFunction;
 import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.api.java.function.ReduceFunction;
 import org.apache.spark.streaming.Duration;
@@ -90,76 +89,62 @@ public class KafkaToSparkStreaming {
                 topics);
         
         //将一条日志拆分诚多条（分隔符为";"）
-       /* JavaPairDStream<String,String> pairDStream = realTimeLogDStream.mapToPair(
-    		new PairFunction<Tuple2<String,String>, String, String>() {
+        JavaDStream<String> logDStream = realTimeLogDStream.flatMap(
+			new FlatMapFunction<Tuple2<String,String>, String>() {
+				private static final long serialVersionUID = -4327021536484339309L;
+			
 				@Override
-				public Tuple2<String, String> call(Tuple2<String, String> t) throws Exception {
-					String[] ss = t._2.split(";");
-					return new Tuple2<String,String>(ss[0],t._2);
+				public Iterable<String> call(Tuple2<String, String> tuple2) throws Exception {
+					return Arrays.asList(tuple2._2.split(";"));
 				}
-			}
-        );*/
+			});
         
-        JavaPairDStream<String,String> pairDStream = realTimeLogDStream.flatMapToPair(
-        		new PairFlatMapFunction<Tuple2<String,String>, String, String>() {
-					private static final long serialVersionUID = -6814161825885679045L;
-
-					@Override
-					public Iterable<Tuple2<String, String>> call(Tuple2<String, String> t) throws Exception {
-						String[] ss = t._2.split(";");
-						List<Tuple2<String,String>> list = new ArrayList<Tuple2<String,String>>();
-						for (String str : ss) {
-							String[] s = str.split(",");
-							Tuple2<String,String> tuple = new Tuple2<String,String>(s[0],str);
-							list.add(tuple);
-						}
-						return list;
-					}
-				}
-        	);
-        		
-        		
-        /*realTimeLogDStream.flatMap(
-        		new FlatMapFunction<Tuple2<String,String>, String>() {
-					private static final long serialVersionUID = -4327021536484339309L;
-
-					@Override
-					public Iterable<String> call(Tuple2<String, String> tuple2) throws Exception {
-						return Arrays.asList(tuple2._2.split(";"));
-					}
-        		}
-        	)
-        ;*/
-        pairDStream.print();
         
         /** 数据清洗：
-         * 	1.条件过滤：time>2015-11-30 11:59:59 && time<2015-11-30 14:00:00
-         *  2.过滤时间不符合标准UTC时间
+         * 	1.过滤时间不符合标准UTC时间
+         *  2.条件过滤：time>2015-11-30 11:59:59 && time<2015-11-30 14:00:00
          */
-       /* JavaDStream<String> filterLogDStream = logDStream.filter(
-        		new Function<String, Boolean>() {
-					private static final long serialVersionUID = -3752279481282155425L;
-					
-					@Override
-					public Boolean call(String str) throws Exception {
-						String[] ss = str.split(",");
-						if(ss.length > 1 && DateUtils.isInTimePeriod(ss[0], start_time, end_time)){
-							//判断是否符合标准UTC时间标准
-							//TODO
-							return true;
-						}
+        JavaDStream<String> filterLogDStream = logDStream.filter(
+			new Function<String, Boolean>() {
+				private static final long serialVersionUID = -3752279481282155425L;
+				
+				@Override
+				public Boolean call(String str) throws Exception {
+					String[] ss = str.split(",");
+					if(ss != null && ss.length > 1 
+							&& DateUtils.isValidDate(ss[0])
+							&& DateUtils.isInTimePeriod(ss[0], start_time, end_time))
+						return true;
+					else
 						return false;
-					}
 				}
-        );*/
-        
-        //去重
-        //filterLogDStream.transformToPair(new Function<JavaRDD<String>,JavaPairRDD<String,String>>())
-        		
+			});
         
         
-        log.warn("---数据保存至HDFS---");
-        //filterLogDStream.print();
+        /** 数据清洗：
+         * 	3.去重：首先转换诚JavaPairDStream，然后使用reduceBykey去重
+         */
+        JavaPairDStream<String,String> distinctDStream = filterLogDStream.mapToPair(
+        	new PairFunction<String, String, String>() {
+				private static final long serialVersionUID = 171084037290528597L;
+
+				@Override
+				public Tuple2<String, String> call(String str) throws Exception {
+					String[] ss = str.split(",");
+					return new Tuple2<String,String>(ss[0],str);
+				}
+        	}).reduceByKey(
+        	new Function2<String, String, String>() {
+				private static final long serialVersionUID = 4693085980956592919L;
+
+				@Override
+				public String call(String v1, String v2) throws Exception {
+					return v1;
+				}
+			});
+        
+        
+        distinctDStream.print();
         //filterLogDStream.dstream().saveAsTextFiles(hdfs_uri + "/tmp/data/kafka/", "kafkaData");
         
         jssc.start();
