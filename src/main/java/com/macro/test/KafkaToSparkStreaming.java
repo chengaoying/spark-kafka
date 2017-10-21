@@ -88,28 +88,36 @@ public class KafkaToSparkStreaming {
 					public Iterable<String> call(Tuple2<String, String> tuple2) throws Exception {
 						return Arrays.asList(tuple2._2.split(";"));
 					}
-        			
         		}
         );
         
         //条件过滤：time>2015-11-30 11:59:59 && time<2015-11-30 14:00:00
-        JavaDStream<String> filterLogDStream = logDStream.filter(new Function<String, Boolean>() {
-			private static final long serialVersionUID = -3752279481282155425L;
-
-			@Override
-			public Boolean call(String str) throws Exception {
-				String[] ss = str.split(",");
-				if(ss.length > 1 
-						&& DateUtils.isInTimePeriod(ss[0], start_time, end_time)){
-					return true;
+        JavaDStream<String> filterLogDStream = logDStream.filter(
+        		new Function<String, Boolean>() {
+					private static final long serialVersionUID = -3752279481282155425L;
+					
+					@Override
+					public Boolean call(String str) throws Exception {
+						String[] ss = str.split(",");
+						if(ss.length > 1 && DateUtils.isInTimePeriod(ss[0], start_time, end_time)){
+							return true;
+						}
+						return false;
+					}
 				}
-				return false;
-			}
-		});
+        );
+        
+        //接收的数据总数
+        JavaDStream<Long> count = filterLogDStream.count();
+        log.warn("总共接收到数据为：" + count);
+        
+        //数据清洗：过滤时间不符合标准UTC时间、去重
+        
+        
         
         log.warn("---数据保存至HDFS---");
         filterLogDStream.print();
-        filterLogDStream.dstream().saveAsTextFiles(hdfs_uri + "/tmp/data/kafka/", "kafkaData");
+        //filterLogDStream.dstream().saveAsTextFiles(hdfs_uri + "/tmp/data/kafka/", "kafkaData");
         
         jssc.start();
         jssc.awaitTermination();
