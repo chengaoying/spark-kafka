@@ -6,10 +6,16 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.spark.Accumulator;
 import org.apache.spark.SparkConf;
+import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.Function;
+import org.apache.spark.api.java.function.Function2;
+import org.apache.spark.api.java.function.ReduceFunction;
+import org.apache.spark.streaming.Duration;
 import org.apache.spark.streaming.Durations;
 import org.apache.spark.streaming.api.java.JavaDStream;
+import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.api.java.JavaPairInputDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.apache.spark.streaming.kafka.KafkaUtils;
@@ -54,7 +60,7 @@ public class KafkaToSparkStreaming {
         JavaStreamingContext jssc = new JavaStreamingContext(sparkConf, Durations.seconds(5));
         jssc.checkpoint(checkpointDir);
         
-        final Accumulator<Integer> count = jssc.sparkContext().accumulator(0, "接收的kafka记录条数");
+        //final Accumulator<Integer> count = jssc.sparkContext().accumulator(0, "接收的kafka记录条数");
 
         // 构建kafka参数map
         // 主要要放置的就是，你要连接的kafka集群的地址（broker集群的地址列表）
@@ -92,32 +98,37 @@ public class KafkaToSparkStreaming {
 					}
         		}
         );
+        realTimeLogDStream.print();
         
-        //条件过滤：time>2015-11-30 11:59:59 && time<2015-11-30 14:00:00
-        JavaDStream<String> filterLogDStream = logDStream.filter(
+        /** 数据清洗：
+         * 	1.条件过滤：time>2015-11-30 11:59:59 && time<2015-11-30 14:00:00
+         *  2.过滤时间不符合标准UTC时间
+         */
+       /* JavaDStream<String> filterLogDStream = logDStream.filter(
         		new Function<String, Boolean>() {
 					private static final long serialVersionUID = -3752279481282155425L;
 					
 					@Override
 					public Boolean call(String str) throws Exception {
-						count.add(1);
 						String[] ss = str.split(",");
 						if(ss.length > 1 && DateUtils.isInTimePeriod(ss[0], start_time, end_time)){
+							//判断是否符合标准UTC时间标准
+							//TODO
 							return true;
 						}
 						return false;
 					}
 				}
-        );
+        );*/
         
-        log.warn("接收的数据条数：" + count.value());
-        
-        //数据清洗：过滤时间不符合标准UTC时间、去重
+        //去重
+        //filterLogDStream.transformToPair(new Function<JavaRDD<String>,JavaPairRDD<String,String>>())
+        		
         
         
         log.warn("---数据保存至HDFS---");
-        filterLogDStream.print();
-        filterLogDStream.dstream().saveAsTextFiles(hdfs_uri + "/tmp/data/kafka/", "kafkaData");
+        //filterLogDStream.print();
+        //filterLogDStream.dstream().saveAsTextFiles(hdfs_uri + "/tmp/data/kafka/", "kafkaData");
         
         jssc.start();
         jssc.awaitTermination();
