@@ -1,4 +1,4 @@
-package com.macro.test;
+package com.macro.test.util;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;

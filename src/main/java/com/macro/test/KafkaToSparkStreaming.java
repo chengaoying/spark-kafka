@@ -12,6 +12,10 @@ import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaPairInputDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.apache.spark.streaming.kafka.KafkaUtils;
+
+import com.macro.test.util.ConfigurationManager;
+import com.macro.test.util.DateUtils;
+
 import scala.Tuple2;
 
 import java.util.*;
@@ -25,9 +29,6 @@ public class KafkaToSparkStreaming {
 	
 	protected static Log log = LogFactory.getLog(KafkaToSparkStreaming.class);
 	
-	protected static String hdfs_uri = "hdfs://192.168.0.224:8020";
-	protected static String broker_list = "192.168.0.221:9092,192.168.0.222:9092,192.168.0.223:9092";
-
     public static void main(String[] args) throws Exception {
     	
     	/*if (args.length < 3) {
@@ -39,21 +40,18 @@ public class KafkaToSparkStreaming {
     	String topic = args[2];
     	*/
     	
+    	String hdfs_uri = ConfigurationManager.getProperty("hdfs.uri");
+    	String broker_list = ConfigurationManager.getProperty("kafka.metadata.broker.list");
+    	String kafka_topics = ConfigurationManager.getProperty("kafka.topics");
+    	final String start_time = ConfigurationManager.getProperty("kafka.startTime");
+    	final String end_time = ConfigurationManager.getProperty("kafka.endTime");
+    	
     	log.warn("启动接收Kafka数据测试程序");
     	
         SparkConf sparkConf = new SparkConf().setAppName("KafkaToSparkStreaming");
-        /*if (args.length > 0 && "local".equals(args[0])) {
-    		sparkConf.setMaster("local[*]");
-    	}*/
-        //sparkConf.set("spark.streaming.backpressure.enabled", "true");
-        //sparkConf.set("spark.sql.parquet.compression.codec", "snappy");
-        //sparkConf.set("spark.sql.parquet.mergeSchema", "true");
-        //sparkConf.set("spark.sql.parquet.binaryAsString", "true");
-        
         final String checkpointDir = hdfs_uri + "/tmp/streaming_checkpoint";
         
         JavaStreamingContext jssc = new JavaStreamingContext(sparkConf, Durations.seconds(5));
-        //final HiveContext sqlContext = new HiveContext(jssc.sparkContext()); 
         jssc.checkpoint(checkpointDir);
 
         // 构建kafka参数map
@@ -62,11 +60,13 @@ public class KafkaToSparkStreaming {
         kafkaParams.put("metadata.broker.list",broker_list);
         kafkaParams.put("group.id","test_group1");
         kafkaParams.put("auto.offset.reset","smallest");
-        //kafkaParams.put("kafka.ofset.reset","0");
         
         // 构建topic set
         Set<String> topics = new HashSet<String>();
-        topics.add("test_topic");
+        String[] _topics = kafka_topics.split(",");
+        for (String str : _topics) {
+        	topics.add(str);
+		}
 
         // 基于kafka direct api模式，构建出了针对kafka集群中指定topic的输入DStream
         // 两个值，val1，val2；val1没有什么特殊的意义；val2中包含了kafka topic中的一条一条的实时日志数据
@@ -100,7 +100,7 @@ public class KafkaToSparkStreaming {
 			public Boolean call(String str) throws Exception {
 				String[] ss = str.split(",");
 				if(ss.length > 1 
-						&& DateUtils.isInTimePeriod(ss[0], "2015-11-30 11:59:59", "2015-11-30 14:00:00")){
+						&& DateUtils.isInTimePeriod(ss[0], start_time, end_time)){
 					return true;
 				}
 				return false;
