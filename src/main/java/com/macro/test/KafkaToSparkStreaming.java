@@ -4,6 +4,7 @@ import kafka.serializer.StringDecoder;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.spark.Accumulator;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.Function;
@@ -52,6 +53,8 @@ public class KafkaToSparkStreaming {
         
         JavaStreamingContext jssc = new JavaStreamingContext(sparkConf, Durations.seconds(5));
         jssc.checkpoint(checkpointDir);
+        
+        final Accumulator<Integer> count = jssc.sparkContext().accumulator(0, "接收的kafka记录条数");
 
         // 构建kafka参数map
         // 主要要放置的就是，你要连接的kafka集群的地址（broker集群的地址列表）
@@ -97,6 +100,7 @@ public class KafkaToSparkStreaming {
 					
 					@Override
 					public Boolean call(String str) throws Exception {
+						count.add(1);
 						String[] ss = str.split(",");
 						if(ss.length > 1 && DateUtils.isInTimePeriod(ss[0], start_time, end_time)){
 							return true;
@@ -105,6 +109,8 @@ public class KafkaToSparkStreaming {
 					}
 				}
         );
+        
+        log.warn("接收的数据条数：" + count.value());
         
         //数据清洗：过滤时间不符合标准UTC时间、去重
         
