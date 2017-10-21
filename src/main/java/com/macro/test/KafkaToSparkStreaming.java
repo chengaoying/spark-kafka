@@ -108,8 +108,8 @@ public class KafkaToSparkStreaming {
         );
         
         //接收的数据总数
-        log.warn("总共接收到数据为：");
-        filterLogDStream.count().print();
+        //log.warn("总共接收到数据为：");
+        //filterLogDStream.count();
         
         //数据清洗：过滤时间不符合标准UTC时间、去重
         
