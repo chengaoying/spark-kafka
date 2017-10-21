@@ -11,6 +11,8 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
+import org.apache.spark.api.java.function.PairFlatMapFunction;
+import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.api.java.function.ReduceFunction;
 import org.apache.spark.streaming.Duration;
 import org.apache.spark.streaming.Durations;
@@ -88,7 +90,18 @@ public class KafkaToSparkStreaming {
                 topics);
         
         //将一条日志拆分诚多条（分隔符为";"）
-        JavaDStream<String> logDStream = realTimeLogDStream.flatMap(
+        JavaPairDStream<String,String> pairDStream = realTimeLogDStream.mapToPair(
+    		new PairFunction<Tuple2<String,String>, String, String>() {
+				@Override
+				public Tuple2<String, String> call(Tuple2<String, String> t) throws Exception {
+					String[] ss = t._2.split(";");
+					return new Tuple2<String,String>(ss[0],t._2);
+				}
+			}
+        );
+        		
+        		
+        		/*(
         		new FlatMapFunction<Tuple2<String,String>, String>() {
 					private static final long serialVersionUID = -4327021536484339309L;
 
@@ -97,8 +110,8 @@ public class KafkaToSparkStreaming {
 						return Arrays.asList(tuple2._2.split(";"));
 					}
         		}
-        );
-        realTimeLogDStream.print();
+        	);*/
+        pairDStream.print();
         
         /** 数据清洗：
          * 	1.条件过滤：time>2015-11-30 11:59:59 && time<2015-11-30 14:00:00
