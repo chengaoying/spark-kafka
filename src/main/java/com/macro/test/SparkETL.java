@@ -5,10 +5,18 @@ import kafka.serializer.StringDecoder;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.spark.SparkConf;
+import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFunction;
+import org.apache.spark.api.java.function.VoidFunction;
+import org.apache.spark.sql.Row;
+import org.apache.spark.sql.RowFactory;
+import org.apache.spark.sql.types.DataTypes;
+import org.apache.spark.sql.types.StructField;
+import org.apache.spark.sql.types.StructType;
 import org.apache.spark.streaming.Durations;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
@@ -107,7 +115,7 @@ public class SparkETL {
 						return false;
 				}
 			});
-        
+
         
         /** 数据清洗：
          * 	3.去重：首先转换诚JavaPairDStream，然后使用reduceBykey去重
@@ -142,14 +150,69 @@ public class SparkETL {
 				}
         	});
         
-        /**
+        //根据风机ID分组
+  		JavaPairDStream<String, Iterable<String>> groupDStream = rowDStream.mapToPair(
+          	new PairFunction<String, String, String>() {
+  				private static final long serialVersionUID = 1L;
+
+  				@Override
+  				public Tuple2<String, String> call(String str) throws Exception {
+  					String[] ss = str.split(",");
+  					return new Tuple2<String,String>(ss[1],str);
+  				}
+          	}).groupByKey();
+        
+  		groupDStream.print();
+  		
+  		/**
          * 数据存入HDFS中
          */
         //rowDStream.print();
-        rowDStream.dstream().saveAsTextFiles(hdfs_uri + "/tmp/data/kafka/", "kafkaData");
-        
+        //rowDStream.dstream().saveAsTextFiles(hdfs_uri + "/tmp/data/kafka/", "kafkaData");
+  		
         jssc.start();
         jssc.awaitTermination();
     }
+	
+	public static void genSparkSQLScheam(JavaDStream<String> rowDStream){
+		//根据风机ID分组
+		JavaPairDStream<String, Iterable<String>> groupDStream = rowDStream.mapToPair(
+        	new PairFunction<String, String, String>() {
+				private static final long serialVersionUID = 1L;
+
+				@Override
+				public Tuple2<String, String> call(String str) throws Exception {
+					String[] ss = str.split(",");
+					return new Tuple2<String,String>(ss[1],str);
+				}
+        	}).groupByKey();
+		
+		// The schema is encoded in a string
+		String schemaString = "name age";
+
+		// Generate the schema based on the string of schema
+		List<StructField> fields = new ArrayList<StructField>();
+		for (String fieldName: schemaString.split(" ")) {
+		  fields.add(DataTypes.createStructField(fieldName, DataTypes.StringType, true));
+		}
+		StructType schema = DataTypes.createStructType(fields);
+		
+		// Convert records of the RDD (people) to Rows.
+		/*JavaRDD<Row> rowRDD = rowDStream.foreachRDD(
+		  new Function<String, Row>() {
+		    public Row call(String record) throws Exception {
+		      return RowFactory.create(Arrays.asList(record.split(",")));
+		    }
+		  });*/
+		
+		 // Get the lines, load to sqlContext  
+		/*rowDStream.foreachRDD(new VoidFunction<JavaPairRDD<String,String>>() {  
+            private static final long serialVersionUID = 1L;  
+  
+            public void call(JavaPairRDD<String, String> t) throws Exception {  
+                if(t.count() < 1) return ;  
+            }  
+        });*/ 
+	}
 
 }
