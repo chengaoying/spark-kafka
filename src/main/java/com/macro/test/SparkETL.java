@@ -18,6 +18,7 @@ import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import org.apache.spark.streaming.Durations;
+import org.apache.spark.streaming.Time;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.api.java.JavaPairInputDStream;
@@ -41,15 +42,15 @@ public class SparkETL {
 	
 	protected static Log log = LogFactory.getLog(SparkETL.class);
 	
+	protected static String hdfs_uri = ConfigurationManager.getProperty("hdfs.uri");
+	protected static String broker_list = ConfigurationManager.getProperty("kafka.metadata.broker.list");
+	protected static String kafka_topics = ConfigurationManager.getProperty("kafka.topics");
+	protected static String start_time = ConfigurationManager.getProperty("kafka.startTime");
+	protected static String end_time = ConfigurationManager.getProperty("kafka.endTime");
+	
 	public static void main(String[] args) throws Exception {
     	
     	log.warn("启动流处理测试程序");
-    	
-    	String hdfs_uri = ConfigurationManager.getProperty("hdfs.uri");
-    	String broker_list = ConfigurationManager.getProperty("kafka.metadata.broker.list");
-    	String kafka_topics = ConfigurationManager.getProperty("kafka.topics");
-    	final String start_time = ConfigurationManager.getProperty("kafka.startTime");
-    	final String end_time = ConfigurationManager.getProperty("kafka.endTime");
     	
         SparkConf sparkConf = new SparkConf().setAppName("KafkaToSparkStreaming");
         final String checkpointDir = hdfs_uri + "/tmp/streaming_checkpoint";
@@ -150,23 +151,12 @@ public class SparkETL {
 				}
         	});
         
-        //根据风机ID分组
-  		JavaPairDStream<String, Iterable<String>> groupDStream = rowDStream.mapToPair(
-          	new PairFunction<String, String, String>() {
-  				private static final long serialVersionUID = 1L;
-
-  				@Override
-  				public Tuple2<String, String> call(String str) throws Exception {
-  					String[] ss = str.split(",");
-  					return new Tuple2<String,String>(ss[1],str);
-  				}
-          	}).groupByKey();
-        
-  		groupDStream.print();
-  		
   		/**
          * 数据存入HDFS中
          */
+        //根据风机ID分组
+  		saveDataToHDFS(rowDStream);
+        
         //rowDStream.print();
         //rowDStream.dstream().saveAsTextFiles(hdfs_uri + "/tmp/data/kafka/", "kafkaData");
   		
@@ -174,6 +164,69 @@ public class SparkETL {
         jssc.awaitTermination();
     }
 	
+	private static void saveDataToHDFS(JavaDStream<String> rowDStream) {
+		final String fengjiA = "01001";
+		final String fengjiB = "01002";
+		final String fengjiC = "01003";
+		final String fengjiD = "01004";
+		
+		JavaDStream<String> FengJiADStream = rowDStream.filter(
+				new Function<String, Boolean>() {
+					private static final long serialVersionUID = 1L;
+	
+					@Override
+					public Boolean call(String str) throws Exception {
+						String[] ss = str.split(",");
+						if(ss != null && ss.length > 0 && ss[1].equals(fengjiA))
+							return true;
+						return false;
+					}
+				});
+		FengJiADStream.dstream().saveAsTextFiles(hdfs_uri + "/tmp/data/"+fengjiA+"/", "kafkaData");
+		
+		JavaDStream<String> FengJiBDStream = rowDStream.filter(
+				new Function<String, Boolean>() {
+					private static final long serialVersionUID = 1L;
+
+					@Override
+					public Boolean call(String str) throws Exception {
+						String[] ss = str.split(",");
+						if(ss != null && ss.length > 0 && ss[1].equals(fengjiB))
+							return true;
+						return false;
+					}
+				});
+		FengJiBDStream.dstream().saveAsTextFiles(hdfs_uri + "/tmp/data/"+fengjiB+"/", "kafkaData");
+		
+		JavaDStream<String> FengJiCDStream = rowDStream.filter(
+				new Function<String, Boolean>() {
+					private static final long serialVersionUID = 1L;
+
+					@Override
+					public Boolean call(String str) throws Exception {
+						String[] ss = str.split(",");
+						if(ss != null && ss.length > 0 && ss[1].equals(fengjiC))
+							return true;
+						return false;
+					}
+				});
+		FengJiCDStream.dstream().saveAsTextFiles(hdfs_uri + "/tmp/data/"+fengjiC+"/", "kafkaData");
+		
+		JavaDStream<String> FengJiDDStream = rowDStream.filter(
+				new Function<String, Boolean>() {
+					private static final long serialVersionUID = 1L;
+
+					@Override
+					public Boolean call(String str) throws Exception {
+						String[] ss = str.split(",");
+						if(ss != null && ss.length > 0 && ss[1].equals(fengjiD))
+							return true;
+						return false;
+					}
+				});
+		FengJiDDStream.dstream().saveAsTextFiles(hdfs_uri + "/tmp/data/"+fengjiD+"/", "kafkaData");
+	}
+
 	public static void genSparkSQLScheam(JavaDStream<String> rowDStream){
 		//根据风机ID分组
 		JavaPairDStream<String, Iterable<String>> groupDStream = rowDStream.mapToPair(
