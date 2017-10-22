@@ -4,16 +4,11 @@ import kafka.serializer.StringDecoder;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.spark.Accumulator;
 import org.apache.spark.SparkConf;
-import org.apache.spark.api.java.JavaPairRDD;
-import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFunction;
-import org.apache.spark.api.java.function.ReduceFunction;
-import org.apache.spark.streaming.Duration;
 import org.apache.spark.streaming.Durations;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
@@ -29,25 +24,18 @@ import scala.Tuple2;
 import java.util.*;
 
 /**
- * 将kafka数据导入到hive表中
+ * 数据清洗：使用sparkstreaming从kafka实时接入数据，然后对数据进行清洗
+ * 符合标准UTC、去重，存入hdfs
  * @author jakce
  *
  */
-public class KafkaToSparkStreaming {
+public class SparkETL {
 	
-	protected static Log log = LogFactory.getLog(KafkaToSparkStreaming.class);
+	protected static Log log = LogFactory.getLog(SparkETL.class);
 	
-    public static void main(String[] args) throws Exception {
+	public static void main(String[] args) throws Exception {
     	
     	log.warn("启动流处理测试程序");
-    	/*if (args.length < 3) {
-    		System.err.println("Usage: KafkaToSparkStreaming <hdfs_uri> <broker_list> <topic1,topic2>");
-    		System.exit(1);
-    	}
-    	String hdfs_uri = args[0];
-    	String broker_list = args[1];
-    	String topic = args[2];
-    	*/
     	
     	String hdfs_uri = ConfigurationManager.getProperty("hdfs.uri");
     	String broker_list = ConfigurationManager.getProperty("kafka.metadata.broker.list");
@@ -143,9 +131,22 @@ public class KafkaToSparkStreaming {
 				}
 			});
         
+        //将JavaPairDStream转换成JavaDStream
+        JavaDStream<String> rowDStream = distinctDStream.map(
+        	new Function<Tuple2<String,String>, String>() {
+				private static final long serialVersionUID = 1L;
+
+				@Override
+				public String call(Tuple2<String, String> t) throws Exception {
+					return t._2;
+				}
+        	});
         
-        distinctDStream.print();
-        //filterLogDStream.dstream().saveAsTextFiles(hdfs_uri + "/tmp/data/kafka/", "kafkaData");
+        /**
+         * 数据存入HDFS中
+         */
+        //rowDStream.print();
+        rowDStream.dstream().saveAsTextFiles(hdfs_uri + "/tmp/data/kafka/", "kafkaData");
         
         jssc.start();
         jssc.awaitTermination();
