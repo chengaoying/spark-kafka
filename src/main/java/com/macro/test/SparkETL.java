@@ -164,7 +164,7 @@ public class SparkETL {
         
         
         //saveDataToKafka(rowDStream);
-        new JavaDStreamKafkaWriter(rowDStream,"topic_1",true);
+        new JavaDStreamKafkaWriter(rowDStream,"topic_1",true).writeToKafka();
         
         
         /**
