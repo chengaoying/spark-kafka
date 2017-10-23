@@ -115,7 +115,7 @@ public class RealTimeWarn {
 
 					@Override
 					public void call(Iterator<String> t) throws Exception {
-						HiveContext hiveContext = new HiveContext(rdd.context());
+						//HiveContext hiveContext = new HiveContext(rdd.context());
 						
 						while(t.hasNext()){
 							
