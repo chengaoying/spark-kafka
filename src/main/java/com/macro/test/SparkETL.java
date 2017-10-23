@@ -222,7 +222,7 @@ public class SparkETL {
 				}
 			});
 		
-		//pairDStream2.print();
+		pairDStream2.print();
 	}
 
 	private static void saveDataToHDFS(JavaDStream<String> rowDStream) {
