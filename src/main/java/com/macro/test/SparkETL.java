@@ -205,7 +205,7 @@ public class SparkETL {
 					
 					//如果集合大小等于1，则说明集合中的数值都相同
 					if(sets.size()==1){
-						String _value = value.replace("|", ",");
+						String _value = sets.size() +" "+ value.replace("|", ",");
 						/*Record record = new Record();
 						record.setValue(_value);*/
 						
