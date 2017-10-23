@@ -173,7 +173,7 @@ public class SparkETL {
 		String field = "K5"; //测点字段
 		final int index = 6;
 		
-		//先将流的RDD组装成<yyyy-MM-dd hh:mm,<测点数据,测点数据...>>
+		//先将流的RDD组装成<yyyy-MM-dd hh:mm,<测点数据|测点数据...>>
 		JavaPairDStream<String, Iterable<String>> pairDStream = rowDStream.window(Durations.minutes(5), Durations.seconds(10))
 			.mapToPair(
 				new PairFunction<String, String, String>() {
