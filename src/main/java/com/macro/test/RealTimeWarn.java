@@ -62,7 +62,7 @@ public class RealTimeWarn {
         Map<String, String> kafkaParams = new HashMap<String, String>();
         kafkaParams.put("metadata.broker.list",broker_list);
         kafkaParams.put("group.id","test_group1");
-        kafkaParams.put("auto.offset.reset","smallest");
+        //kafkaParams.put("auto.offset.reset","smallest");
         
         // 构建topic set
         Set<String> topics = new HashSet<String>();
@@ -91,8 +91,6 @@ public class RealTimeWarn {
 					}
         		});
         
-        rowDStream.print();
-        
         /**
          * 告警：
          */
@@ -101,6 +99,8 @@ public class RealTimeWarn {
         
         //2.阈值、关联规则、与过去某一时刻对比
         realTimeWarn2(rowDStream,hiveContext);
+        
+        rowDStream.print();
         
         jssc.start();
         jssc.awaitTermination();
@@ -128,8 +128,7 @@ public class RealTimeWarn {
 							int n = random.nextInt(150)+100;
 							
 							//String field = "TAG2"; //测点字段
-							//final int index = 353;
-							final int index = 3;
+							final int index = 353;
 							String str = t.next();
 							String[] ss = str.split(",");
 							double val = Double.parseDouble(ss[index]);
