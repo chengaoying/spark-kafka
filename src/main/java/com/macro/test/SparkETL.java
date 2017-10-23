@@ -171,13 +171,13 @@ public class SparkETL {
          * 告警：
          */
         //1.一分钟测点数据不变的告警
-        realTimeWarn1(rowDStream);
+        //realTimeWarn1(rowDStream);
         
         //2.阈值
-        realTimeWarn2(rowDStream);
+        //realTimeWarn2(rowDStream);
         
         //3.关联规则
-        realTimeWarn3(rowDStream);
+        //realTimeWarn3(rowDStream);
         
         jssc.start();
         jssc.awaitTermination();
