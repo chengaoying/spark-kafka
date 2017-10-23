@@ -152,21 +152,19 @@ public class SparkETL {
         //rowDStream.cache();
         
         /**
+         * 数据存入HDFS中
+         */
+  		//saveDataToHDFS(rowDStream);
+        rowDStream.print();
+        //rowDStream.dstream().saveAsTextFiles(hdfs_uri + "/tmp/data/kafka/", "kafkaData");
+        
+        /**
          * 告警：
          * 1.一分钟测点数据不变
          * 2.阈值
          */
         realTimeWarn(rowDStream);
         
-  		/**
-         * 数据存入HDFS中
-         */
-  		//saveDataToHDFS(rowDStream);
-  		
-  		
-        rowDStream.print();
-        //rowDStream.dstream().saveAsTextFiles(hdfs_uri + "/tmp/data/kafka/", "kafkaData");
-  		
         jssc.start();
         jssc.awaitTermination();
     }
@@ -176,7 +174,7 @@ public class SparkETL {
 		final int index = 6;
 		
 		//先将流的RDD组装成<yyyy-MM-dd hh:mm,<测点数据,测点数据...>>
-		JavaPairDStream<String, Iterable<String>> pairDStream = rowDStream.window(Durations.minutes(10), Durations.seconds(5))
+		JavaPairDStream<String, Iterable<String>> pairDStream = rowDStream.window(Durations.minutes(5), Durations.seconds(10))
 			.mapToPair(
 				new PairFunction<String, String, String>() {
 					private static final long serialVersionUID = 1L;
@@ -224,7 +222,7 @@ public class SparkETL {
 				}
 			});
 		
-		pairDStream2.print();
+		//pairDStream2.print();
 	}
 
 	private static void saveDataToHDFS(JavaDStream<String> rowDStream) {
