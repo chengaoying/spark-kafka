@@ -61,7 +61,7 @@ public class RealTimeWarn {
         Map<String, String> kafkaParams = new HashMap<String, String>();
         kafkaParams.put("metadata.broker.list",broker_list);
         kafkaParams.put("group.id","test_group1");
-        //kafkaParams.put("auto.offset.reset","smallest");
+        kafkaParams.put("auto.offset.reset","smallest");
         
         // 构建topic set
         Set<String> topics = new HashSet<String>();
@@ -89,6 +89,8 @@ public class RealTimeWarn {
 						return tuple._2;
 					}
         		});
+        
+        rowDStream.print();
         
         /**
          * 告警：
