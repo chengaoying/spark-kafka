@@ -114,9 +114,9 @@ public class RealTimeWarn {
 				rdd.foreachPartition(new VoidFunction<Iterator<String>>() {
 					private static final long serialVersionUID = 1L;
 
+					HiveContext hiveContext = new HiveContext(rdd.context());
 					@Override
 					public void call(Iterator<String> t) throws Exception {
-						//HiveContext hiveContext = new HiveContext(rdd.context());
 						
 						while(t.hasNext()){
 							
