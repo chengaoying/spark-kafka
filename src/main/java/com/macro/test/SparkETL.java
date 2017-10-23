@@ -5,14 +5,18 @@ import kafka.serializer.StringDecoder;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.spark.SparkConf;
+import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFunction;
+import org.apache.spark.api.java.function.VoidFunction;
+import org.apache.spark.api.java.function.VoidFunction2;
 import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import org.apache.spark.streaming.Durations;
+import org.apache.spark.streaming.Time;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.api.java.JavaPairInputDStream;
@@ -172,7 +176,8 @@ public class SparkETL {
 		final int index = 6;
 		
 		//先将流的RDD组装成<yyyy-MM-dd hh:mm,<测点数据,测点数据...>>
-		JavaPairDStream<String, Iterable<String>> pairDStream =  rowDStream.mapToPair(
+		JavaPairDStream<String, Iterable<String>> pairDStream = rowDStream.window(Durations.minutes(10), Durations.seconds(5))
+			.mapToPair(
 				new PairFunction<String, String, String>() {
 					private static final long serialVersionUID = 1L;
 		
@@ -183,40 +188,43 @@ public class SparkETL {
 						String _str = str.replace(",", "|");
 						return new Tuple2<String,String>(time,_str);
 					}
-				}).groupByKey();
+			}).groupByKey();
 		
-		//
-		pairDStream.filter(new Function<Tuple2<String,Iterable<String>>, Boolean>() {
-			private static final long serialVersionUID = 1L;
-
-			@Override
-			public Boolean call(Tuple2<String, Iterable<String>> t) throws Exception {
-				Set<String> sets = new HashSet<String>();
-				String value = "";
-				for (String str : t._2) {
-					String[] ss = str.split("|");
-					sets.add(ss[index]);
-					value = str;
+		JavaPairDStream<String, Iterable<String>> pairDStream2 = pairDStream.filter(
+			new Function<Tuple2<String,Iterable<String>>, Boolean>() {
+				private static final long serialVersionUID = 1L;
+	
+				@Override
+				public Boolean call(Tuple2<String, Iterable<String>> t) throws Exception {
+					Set<String> sets = new HashSet<String>();
+					String value = "";
+					for (String str : t._2) {
+						String[] ss = str.split("|");
+						sets.add(ss[index]);
+						value = str;
+					}
+					
+					//如果集合大小等于1，则说明集合中的数值都相同
+					if(sets.size()==1){
+						String _value = value.replace("|", ",");
+						/*Record record = new Record();
+						record.setValue(_value);*/
+						
+						String sql = "INSERT INTO record(val) VALUES(?)";
+						
+						List<Object[]> paramsList = new ArrayList<Object[]>();
+						Object[] params = new Object[]{_value};
+						paramsList.add(params);
+						
+						JDBCUtils jdbcUtils = JDBCUtils.getInstance();
+						jdbcUtils.executeBatch(sql, paramsList);
+						return true;
+					}
+					return false;
 				}
-				
-				//如果集合大小等于1，则说明集合中的数值都相同
-				if(sets.size()==1){
-					String _value = value.replace("|", ",");
-					/*Record record = new Record();
-					record.setValue(_value);*/
-					
-					String sql = "INSERT INTO record(val) VALUES(?)";
-					
-					List<Object[]> paramsList = new ArrayList<Object[]>();
-					Object[] params = new Object[]{_value};
-					paramsList.add(params);
-					
-					JDBCUtils jdbcUtils = JDBCUtils.getInstance();
-					jdbcUtils.executeBatch(sql, paramsList);
-				}
-				return null;
-			}
-		});
+			});
+		
+		pairDStream2.print();
 	}
 
 	private static void saveDataToHDFS(JavaDStream<String> rowDStream) {
