@@ -90,7 +90,6 @@ public class RealTimeWarn {
 					}
         		});
         
-        rowDStream.print();
         
         /**
          * 告警：
@@ -154,9 +153,9 @@ public class RealTimeWarn {
 							/**
 							 * 与过去某一时刻对比
 							 */
-							String time = "2015-11-30 12:12:12";
-							DataFrame df = hiveContext.sql("select * from table_1");
-							df.show();
+							//String time = "2015-11-30 12:12:12";
+							//DataFrame df = hiveContext.sql("select * from table_1");
+							//df.show();
 						}
 					}
 				});
