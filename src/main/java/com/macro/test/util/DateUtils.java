@@ -3,8 +3,6 @@ package com.macro.test.util;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.HashSet;
-import java.util.Set;
 
 public class DateUtils {
 	
@@ -60,15 +58,6 @@ public class DateUtils {
 
 		//boolean b = isInTimePeriod("2015-11-30 13:59:59", "2015-11-30 12:00:00", "2015-11-30 13:59:59");
 		//boolean b = isValidDate("2017-11-30 13:59");
-		String t = "2017-11-30 13:59:11";
-		String t1 = t.substring(0,t.length()-3);
-		
-		Set<String> sets = new HashSet<String>();
-		sets.add("asd");
-		sets.add("asd");
-		sets.add("asd");
-		
-		System.out.println(sets.size());
 	}
 
 }

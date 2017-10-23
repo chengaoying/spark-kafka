@@ -5,18 +5,14 @@ import kafka.serializer.StringDecoder;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.spark.SparkConf;
-import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFunction;
-import org.apache.spark.api.java.function.VoidFunction;
-import org.apache.spark.api.java.function.VoidFunction2;
 import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import org.apache.spark.streaming.Durations;
-import org.apache.spark.streaming.Time;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.api.java.JavaPairInputDStream;
@@ -155,7 +151,7 @@ public class SparkETL {
          * 数据存入HDFS中
          */
   		//saveDataToHDFS(rowDStream);
-        rowDStream.print();
+        //rowDStream.print();
         //rowDStream.dstream().saveAsTextFiles(hdfs_uri + "/tmp/data/kafka/", "kafkaData");
         
         /**
@@ -165,12 +161,14 @@ public class SparkETL {
          */
         realTimeWarn(rowDStream);
         
+        rowDStream.print();
+        
         jssc.start();
         jssc.awaitTermination();
     }
 	
 	private static void realTimeWarn(JavaDStream<String> rowDStream) {
-		String field = "K5"; //测点字段
+		//String field = "K5"; //测点字段
 		final int index = 6;
 		
 		//先将流的RDD组装成<yyyy-MM-dd hh:mm,<测点数据|测点数据...>>
