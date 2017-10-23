@@ -10,6 +10,8 @@ import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.api.java.function.VoidFunction2;
+import org.apache.spark.sql.DataFrame;
+import org.apache.spark.sql.hive.HiveContext;
 import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.streaming.Durations;
@@ -92,63 +94,31 @@ public class RealTimeWarn {
          * 告警：
          */
         //1.一分钟测点数据不变的告警
-        realTimeWarn1(rowDStream);
+        //realTimeWarn1(rowDStream);
         
-        //2.阈值
+        //2.阈值、关联规则、与过去某一时刻对比
         realTimeWarn2(rowDStream);
-        
-        //3.关联规则
-        realTimeWarn3(rowDStream);
         
         jssc.start();
         jssc.awaitTermination();
     }
-	
-
-	private static void realTimeWarn3(JavaDStream<String> rowDStream) {
-		rowDStream.foreachRDD(new VoidFunction2<JavaRDD<String>,Time>() {
-			private static final long serialVersionUID = 1L;
-
-			@Override
-			public void call(JavaRDD<String> rdd, Time v2) throws Exception {
-				rdd.foreachPartition(new VoidFunction<Iterator<String>>() {
-					private static final long serialVersionUID = 1L;
-
-					@Override
-					public void call(Iterator<String> t) throws Exception {
-						while(t.hasNext()){
-							
-							//大于阈值则告警，存入数据库
-							if(true){
-								String sql = "INSERT INTO record2(time,val,cal) VALUES(?,?,?)";
-								
-								List<Object[]> paramsList = new ArrayList<Object[]>();
-								//Object[] params = new Object[]{ss[0],str,n};
-								//paramsList.add(params);
-								
-								JDBCUtils jdbcUtils = JDBCUtils.getInstance();
-								jdbcUtils.executeBatch(sql, paramsList);
-							}
-							
-						}
-					}
-				});
-			}
-		});
-	}
 
 	private static void realTimeWarn2(JavaDStream<String> rowDStream) {
 		rowDStream.foreachRDD(new VoidFunction2<JavaRDD<String>,Time>() {
 			private static final long serialVersionUID = 1L;
 
 			@Override
-			public void call(JavaRDD<String> rdd, Time v2) throws Exception {
+			public void call(final JavaRDD<String> rdd, Time v2) throws Exception {
 				rdd.foreachPartition(new VoidFunction<Iterator<String>>() {
 					private static final long serialVersionUID = 1L;
 
 					@Override
 					public void call(Iterator<String> t) throws Exception {
 						while(t.hasNext()){
+							
+							/**
+							 * 阈值告警
+							 */
 							//随机生成一个阈值，值大于200则报警
 							Random random = new Random();
 							int n = random.nextInt(150)+100;
@@ -171,6 +141,19 @@ public class RealTimeWarn {
 								jdbcUtils.executeBatch(sql, paramsList);
 							}
 							
+							
+							/**
+							 * 关联规则
+							 */
+							
+							
+							/**
+							 * 与过去某一时刻对比
+							 */
+							String time = "2015-11-30 12:12:12";
+							HiveContext hiveContext = new HiveContext(rdd.context());
+							DataFrame df = hiveContext.sql("select * from table_1");
+							df.show();
 						}
 					}
 				});
@@ -230,11 +213,6 @@ public class RealTimeWarn {
 			});
 		
 		pairDStream2.print();
-		
-		
-		/**
-		 * 2.一分钟测点数据不变的告警
-		 */
 	}
 	
 	public static void genSparkSQLScheam(JavaDStream<String> rowDStream){
