@@ -5,14 +5,17 @@ import kafka.serializer.StringDecoder;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.spark.SparkConf;
+import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFunction;
+import org.apache.spark.api.java.function.VoidFunction;
+import org.apache.spark.api.java.function.VoidFunction2;
 import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructField;
-import org.apache.spark.sql.types.StructType;
 import org.apache.spark.streaming.Durations;
+import org.apache.spark.streaming.Time;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.api.java.JavaPairInputDStream;
@@ -111,7 +114,6 @@ public class SparkETL {
 				}
 			});
 
-        
         /** 数据清洗：
          * 	3.去重：首先转换诚JavaPairDStream，然后使用reduceBykey去重
          */
@@ -147,30 +149,80 @@ public class SparkETL {
         
         //rowDStream.cache();
         
+        
         /**
          * 数据存入HDFS中
          */
   		//saveDataToHDFS(rowDStream);
-        //rowDStream.print();
+        rowDStream.print();
         //rowDStream.dstream().saveAsTextFiles(hdfs_uri + "/tmp/data/kafka/", "kafkaData");
+        
         
         /**
          * 告警：
-         * 1.一分钟测点数据不变
-         * 2.阈值
          */
-        realTimeWarn(rowDStream);
+        //1.一分钟测点数据不变的告警
+        realTimeWarn1(rowDStream);
+        
+        //2.阈值
+        realTimeWarn2(rowDStream);
+        
+        //3.关联规则
+        //realTimeWarn3(rowDStream);
         
         jssc.start();
         jssc.awaitTermination();
     }
 	
-	private static void realTimeWarn(JavaDStream<String> rowDStream) {
+	private static void realTimeWarn2(JavaDStream<String> rowDStream) {
+		rowDStream.foreachRDD(new VoidFunction2<JavaRDD<String>,Time>() {
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			public void call(JavaRDD<String> rdd, Time v2) throws Exception {
+				rdd.foreachPartition(new VoidFunction<Iterator<String>>() {
+					private static final long serialVersionUID = 1L;
+
+					@Override
+					public void call(Iterator<String> t) throws Exception {
+						while(t.hasNext()){
+							//随机生成一个阈值，值大于200则报警
+							Random random = new Random();
+							int n = random.nextInt(150)+100;
+							
+							//String field = "TAG2"; //测点字段
+							final int index = 353;
+							String str = t.next();
+							String[] ss = str.split(",");
+							int val = Integer.parseInt(ss[index]);
+							
+							//大于阈值则告警，存入数据库
+							if(val > n){
+								String sql = "INSERT INTO record2(time,val,cal) VALUES(?,?,?)";
+								
+								List<Object[]> paramsList = new ArrayList<Object[]>();
+								Object[] params = new Object[]{ss[0],str,n};
+								paramsList.add(params);
+								
+								JDBCUtils jdbcUtils = JDBCUtils.getInstance();
+								jdbcUtils.executeBatch(sql, paramsList);
+							}
+							
+						}
+					}
+				});
+			}
+		});
+		
+		
+	}
+
+	private static void realTimeWarn1(JavaDStream<String> rowDStream) {
 		//String field = "K5"; //测点字段
 		final int index = 6;
 		
 		//先将流的RDD组装成<yyyy-MM-dd hh:mm,<测点数据|测点数据...>>
-		JavaPairDStream<String, Iterable<String>> pairDStream = rowDStream.window(Durations.minutes(5), Durations.seconds(10))
+		JavaPairDStream<String, Iterable<String>> pairDStream = rowDStream.window(Durations.minutes(3), Durations.seconds(10))
 			.mapToPair(
 				new PairFunction<String, String, String>() {
 					private static final long serialVersionUID = 1L;
@@ -217,71 +269,12 @@ public class SparkETL {
 			});
 		
 		pairDStream2.print();
+		
+		
+		/**
+		 * 2.一分钟测点数据不变的告警
+		 */
 	}
-
-	private static void saveDataToHDFS(JavaDStream<String> rowDStream) {
-		final String fengjiA = "01001";
-		final String fengjiB = "01002";
-		final String fengjiC = "01003";
-		final String fengjiD = "01004";
-		
-		JavaDStream<String> FengJiADStream = rowDStream.filter(
-				new Function<String, Boolean>() {
-					private static final long serialVersionUID = 1L;
-	
-					@Override
-					public Boolean call(String str) throws Exception {
-						String[] ss = str.split(",");
-						if(ss != null && ss.length > 0 && ss[1].equals(fengjiA))
-							return true;
-						return false;
-					}
-				});
-		FengJiADStream.dstream().saveAsTextFiles(hdfs_uri + "/tmp/data/"+fengjiA+"/", "kafkaData");
-		
-		JavaDStream<String> FengJiBDStream = rowDStream.filter(
-				new Function<String, Boolean>() {
-					private static final long serialVersionUID = 1L;
-
-					@Override
-					public Boolean call(String str) throws Exception {
-						String[] ss = str.split(",");
-						if(ss != null && ss.length > 0 && ss[1].equals(fengjiB))
-							return true;
-						return false;
-					}
-				});
-		FengJiBDStream.dstream().saveAsTextFiles(hdfs_uri + "/tmp/data/"+fengjiB+"/", "kafkaData");
-		
-		JavaDStream<String> FengJiCDStream = rowDStream.filter(
-				new Function<String, Boolean>() {
-					private static final long serialVersionUID = 1L;
-
-					@Override
-					public Boolean call(String str) throws Exception {
-						String[] ss = str.split(",");
-						if(ss != null && ss.length > 0 && ss[1].equals(fengjiC))
-							return true;
-						return false;
-					}
-				});
-		FengJiCDStream.dstream().saveAsTextFiles(hdfs_uri + "/tmp/data/"+fengjiC+"/", "kafkaData");
-		
-		JavaDStream<String> FengJiDDStream = rowDStream.filter(
-				new Function<String, Boolean>() {
-					private static final long serialVersionUID = 1L;
-
-					@Override
-					public Boolean call(String str) throws Exception {
-						String[] ss = str.split(",");
-						if(ss != null && ss.length > 0 && ss[1].equals(fengjiD))
-							return true;
-						return false;
-					}
-				});
-		FengJiDDStream.dstream().saveAsTextFiles(hdfs_uri + "/tmp/data/"+fengjiD+"/", "kafkaData");
-	}
-	
 	
 	public static void genSparkSQLScheam(JavaDStream<String> rowDStream){
 		//根据风机ID分组
@@ -305,7 +298,7 @@ public class SparkETL {
 		for (String fieldName: schemaString.split(" ")) {
 		  fields.add(DataTypes.createStructField(fieldName, DataTypes.StringType, true));
 		}
-		StructType schema = DataTypes.createStructType(fields);
+		//StructType schema = DataTypes.createStructType(fields);
 		
 		// Convert records of the RDD (people) to Rows.
 		/*JavaRDD<Row> rowRDD = rowDStream.foreachRDD(
