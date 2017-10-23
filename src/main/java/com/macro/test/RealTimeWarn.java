@@ -55,6 +55,7 @@ public class RealTimeWarn {
         
         JavaStreamingContext jssc = new JavaStreamingContext(sparkConf, Durations.seconds(5));
         jssc.checkpoint(checkpointDir);
+        final HiveContext hiveContext = new HiveContext(jssc.sparkContext());  
 
         // 构建kafka参数map
         // 主要要放置的就是，你要连接的kafka集群的地址（broker集群的地址列表）
@@ -99,13 +100,13 @@ public class RealTimeWarn {
         //realTimeWarn1(rowDStream);
         
         //2.阈值、关联规则、与过去某一时刻对比
-        realTimeWarn2(rowDStream);
+        realTimeWarn2(rowDStream,hiveContext);
         
         jssc.start();
         jssc.awaitTermination();
     }
 
-	private static void realTimeWarn2(JavaDStream<String> rowDStream) {
+	private static void realTimeWarn2(JavaDStream<String> rowDStream, final HiveContext hiveContext) {
 		rowDStream.foreachRDD(new VoidFunction2<JavaRDD<String>,Time>() {
 			private static final long serialVersionUID = 1L;
 
@@ -114,7 +115,6 @@ public class RealTimeWarn {
 				rdd.foreachPartition(new VoidFunction<Iterator<String>>() {
 					private static final long serialVersionUID = 1L;
 
-					HiveContext hiveContext = new HiveContext(rdd.context());
 					@Override
 					public void call(Iterator<String> t) throws Exception {
 						
@@ -155,9 +155,9 @@ public class RealTimeWarn {
 							/**
 							 * 与过去某一时刻对比
 							 */
-							//String time = "2015-11-30 12:12:12";
-							//DataFrame df = hiveContext.sql("select * from table_1");
-							//df.show();
+							String time = "2015-11-30 12:12:12";
+							DataFrame df = hiveContext.sql("select * from table_1");
+							df.show();
 						}
 					}
 				});
