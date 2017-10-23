@@ -63,7 +63,7 @@ public class SparkETL {
         Map<String, String> kafkaParams = new HashMap<String, String>();
         kafkaParams.put("metadata.broker.list",broker_list);
         kafkaParams.put("group.id","test_group1");
-        kafkaParams.put("auto.offset.reset","smallest");
+        //kafkaParams.put("auto.offset.reset","smallest");
         
         // 构建topic set
         Set<String> topics = new HashSet<String>();
@@ -188,6 +188,7 @@ public class SparkETL {
 					}
 			}).groupByKey();
 		
+		//计算
 		JavaPairDStream<String, Iterable<String>> pairDStream2 = pairDStream.filter(
 			new Function<Tuple2<String,Iterable<String>>, Boolean>() {
 				private static final long serialVersionUID = 1L;
