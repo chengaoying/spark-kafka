@@ -161,10 +161,10 @@ public class SparkETL {
   		/**
          * 数据存入HDFS中
          */
-  		saveDataToHDFS(rowDStream);
+  		//saveDataToHDFS(rowDStream);
   		
   		
-        //rowDStream.print();
+        rowDStream.print();
         //rowDStream.dstream().saveAsTextFiles(hdfs_uri + "/tmp/data/kafka/", "kafkaData");
   		
         jssc.start();
