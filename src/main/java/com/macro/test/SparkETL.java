@@ -21,6 +21,8 @@ import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.api.java.JavaPairInputDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.apache.spark.streaming.kafka.KafkaUtils;
+
+import com.macro.test.kafka.JavaDStreamKafkaWriter;
 import com.macro.test.util.ConfigurationManager;
 import com.macro.test.util.DateUtils;
 import com.macro.test.util.JDBCUtils;
@@ -45,6 +47,8 @@ public class SparkETL {
 	protected static String start_time = ConfigurationManager.getProperty("kafka.startTime");
 	protected static String end_time = ConfigurationManager.getProperty("kafka.endTime");
 	
+	protected static String topic = "test_topic";
+	
 	public static void main(String[] args) throws Exception {
     	
     	log.warn("启动流处理测试程序");
@@ -66,10 +70,11 @@ public class SparkETL {
         
         // 构建topic set
         Set<String> topics = new HashSet<String>();
-        String[] _topics = kafka_topics.split(",");
+        topics.add(topic);
+        /*String[] _topics = kafka_topics.split(",");
         for (String str : _topics) {
         	topics.add(str);
-		}
+		}*/
 
         // 基于kafka direct api模式，构建出了针对kafka集群中指定topic的输入DStream
         // 两个值，val1，val2；val1没有什么特殊的意义；val2中包含了kafka topic中的一条一条的实时日志数据
@@ -158,6 +163,10 @@ public class SparkETL {
         //rowDStream.dstream().saveAsTextFiles(hdfs_uri + "/tmp/data/kafka/", "kafkaData");
         
         
+        //saveDataToKafka(rowDStream);
+        new JavaDStreamKafkaWriter(rowDStream,"topic_1",true);
+        
+        
         /**
          * 告警：
          */
@@ -168,12 +177,44 @@ public class SparkETL {
         realTimeWarn2(rowDStream);
         
         //3.关联规则
-        //realTimeWarn3(rowDStream);
+        realTimeWarn3(rowDStream);
         
         jssc.start();
         jssc.awaitTermination();
     }
-	
+
+	private static void realTimeWarn3(JavaDStream<String> rowDStream) {
+		rowDStream.foreachRDD(new VoidFunction2<JavaRDD<String>,Time>() {
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			public void call(JavaRDD<String> rdd, Time v2) throws Exception {
+				rdd.foreachPartition(new VoidFunction<Iterator<String>>() {
+					private static final long serialVersionUID = 1L;
+
+					@Override
+					public void call(Iterator<String> t) throws Exception {
+						while(t.hasNext()){
+							
+							//大于阈值则告警，存入数据库
+							if(true){
+								String sql = "INSERT INTO record2(time,val,cal) VALUES(?,?,?)";
+								
+								List<Object[]> paramsList = new ArrayList<Object[]>();
+								//Object[] params = new Object[]{ss[0],str,n};
+								//paramsList.add(params);
+								
+								JDBCUtils jdbcUtils = JDBCUtils.getInstance();
+								jdbcUtils.executeBatch(sql, paramsList);
+							}
+							
+						}
+					}
+				});
+			}
+		});
+	}
+
 	private static void realTimeWarn2(JavaDStream<String> rowDStream) {
 		rowDStream.foreachRDD(new VoidFunction2<JavaRDD<String>,Time>() {
 			private static final long serialVersionUID = 1L;
@@ -213,8 +254,6 @@ public class SparkETL {
 				});
 			}
 		});
-		
-		
 	}
 
 	private static void realTimeWarn1(JavaDStream<String> rowDStream) {
