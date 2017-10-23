@@ -161,8 +161,6 @@ public class SparkETL {
          */
         realTimeWarn(rowDStream);
         
-        rowDStream.print();
-        
         jssc.start();
         jssc.awaitTermination();
     }
@@ -204,10 +202,10 @@ public class SparkETL {
 					
 					//如果集合大小等于1，则说明集合中的数值都相同
 					if(sets.size()==1){
-						String sql = "INSERT INTO record(val) VALUES(?)";
+						String sql = "INSERT INTO record(time,val) VALUES(?,?)";
 						
 						List<Object[]> paramsList = new ArrayList<Object[]>();
-						Object[] params = new Object[]{value};
+						Object[] params = new Object[]{t._1,value};
 						paramsList.add(params);
 						
 						JDBCUtils jdbcUtils = JDBCUtils.getInstance();
