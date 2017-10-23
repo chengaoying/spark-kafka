@@ -3,10 +3,13 @@ package com.macro.test.util;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 
 public class DateUtils {
 	
 	public static String pattern_default = "yyyy-MM-dd HH:mm:ss";
+	public static String pattern_1 = "yyyy-MM-dd HH:mm";
 	
 	/**
 	 * 判断某时间是否在某时间段内
@@ -56,8 +59,16 @@ public class DateUtils {
 	public static void main(String[] args) {
 
 		//boolean b = isInTimePeriod("2015-11-30 13:59:59", "2015-11-30 12:00:00", "2015-11-30 13:59:59");
-		boolean b = isValidDate("2017-11-30 13:59");
-		System.out.println(b);
+		//boolean b = isValidDate("2017-11-30 13:59");
+		String t = "2017-11-30 13:59:11";
+		String t1 = t.substring(0,t.length()-3);
+		
+		Set<String> sets = new HashSet<String>();
+		sets.add("asd");
+		sets.add("asd");
+		sets.add("asd");
+		
+		System.out.println(sets.size());
 	}
 
 }

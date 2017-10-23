@@ -5,28 +5,22 @@ import kafka.serializer.StringDecoder;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.spark.SparkConf;
-import org.apache.spark.api.java.JavaPairRDD;
-import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFunction;
-import org.apache.spark.api.java.function.VoidFunction;
-import org.apache.spark.sql.Row;
-import org.apache.spark.sql.RowFactory;
 import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import org.apache.spark.streaming.Durations;
-import org.apache.spark.streaming.Time;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.api.java.JavaPairInputDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.apache.spark.streaming.kafka.KafkaUtils;
-
 import com.macro.test.util.ConfigurationManager;
 import com.macro.test.util.DateUtils;
+import com.macro.test.util.JDBCUtils;
 
 import scala.Tuple2;
 
@@ -123,7 +117,7 @@ public class SparkETL {
          */
         JavaPairDStream<String,String> distinctDStream = filterLogDStream.mapToPair(
         	new PairFunction<String, String, String>() {
-				private static final long serialVersionUID = 171084037290528597L;
+				private static final long serialVersionUID = 1L;
 
 				@Override
 				public Tuple2<String, String> call(String str) throws Exception {
@@ -132,7 +126,7 @@ public class SparkETL {
 				}
         	}).reduceByKey(
         	new Function2<String, String, String>() {
-				private static final long serialVersionUID = 4693085980956592919L;
+				private static final long serialVersionUID = 1L;
 
 				@Override
 				public String call(String v1, String v2) throws Exception {
@@ -151,12 +145,21 @@ public class SparkETL {
 				}
         	});
         
+        //rowDStream.cache();
+        
+        /**
+         * 告警：
+         * 1.一分钟测点数据不变
+         * 2.阈值
+         */
+        realTimeWarn(rowDStream);
+        
   		/**
          * 数据存入HDFS中
          */
-        //根据风机ID分组
   		saveDataToHDFS(rowDStream);
-        
+  		
+  		
         //rowDStream.print();
         //rowDStream.dstream().saveAsTextFiles(hdfs_uri + "/tmp/data/kafka/", "kafkaData");
   		
@@ -164,6 +167,58 @@ public class SparkETL {
         jssc.awaitTermination();
     }
 	
+	private static void realTimeWarn(JavaDStream<String> rowDStream) {
+		String field = "K5"; //测点字段
+		final int index = 6;
+		
+		//先将流的RDD组装成<yyyy-MM-dd hh:mm,<测点数据,测点数据...>>
+		JavaPairDStream<String, Iterable<String>> pairDStream =  rowDStream.mapToPair(
+				new PairFunction<String, String, String>() {
+					private static final long serialVersionUID = 1L;
+		
+					@Override
+					public Tuple2<String, String> call(String str) throws Exception {
+						String[] ss = str.split(",");
+						String time = ss[0].substring(0, ss[0].length()-3);
+						String _str = str.replace(",", "|");
+						return new Tuple2<String,String>(time,_str);
+					}
+				}).groupByKey();
+		
+		//
+		pairDStream.filter(new Function<Tuple2<String,Iterable<String>>, Boolean>() {
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			public Boolean call(Tuple2<String, Iterable<String>> t) throws Exception {
+				Set<String> sets = new HashSet<String>();
+				String value = "";
+				for (String str : t._2) {
+					String[] ss = str.split("|");
+					sets.add(ss[index]);
+					value = str;
+				}
+				
+				//如果集合大小等于1，则说明集合中的数值都相同
+				if(sets.size()==1){
+					String _value = value.replace("|", ",");
+					/*Record record = new Record();
+					record.setValue(_value);*/
+					
+					String sql = "INSERT INTO record(val) VALUES(?)";
+					
+					List<Object[]> paramsList = new ArrayList<Object[]>();
+					Object[] params = new Object[]{_value};
+					paramsList.add(params);
+					
+					JDBCUtils jdbcUtils = JDBCUtils.getInstance();
+					jdbcUtils.executeBatch(sql, paramsList);
+				}
+				return null;
+			}
+		});
+	}
+
 	private static void saveDataToHDFS(JavaDStream<String> rowDStream) {
 		final String fengjiA = "01001";
 		final String fengjiB = "01002";
@@ -226,19 +281,21 @@ public class SparkETL {
 				});
 		FengJiDDStream.dstream().saveAsTextFiles(hdfs_uri + "/tmp/data/"+fengjiD+"/", "kafkaData");
 	}
-
+	
+	
 	public static void genSparkSQLScheam(JavaDStream<String> rowDStream){
 		//根据风机ID分组
-		JavaPairDStream<String, Iterable<String>> groupDStream = rowDStream.mapToPair(
+		/*JavaPairDStream<String, Iterable<String>> groupDStream = rowDStream.mapToPair(
         	new PairFunction<String, String, String>() {
 				private static final long serialVersionUID = 1L;
 
 				@Override
 				public Tuple2<String, String> call(String str) throws Exception {
 					String[] ss = str.split(",");
-					return new Tuple2<String,String>(ss[1],str);
+					String _str = str.replace(",", "|");
+					return new Tuple2<String,String>(ss[1],_str);
 				}
-        	}).groupByKey();
+        	}).groupByKey();*/
 		
 		// The schema is encoded in a string
 		String schemaString = "name age";
@@ -265,7 +322,7 @@ public class SparkETL {
             public void call(JavaPairRDD<String, String> t) throws Exception {  
                 if(t.count() < 1) return ;  
             }  
-        });*/ 
+        }); */
 	}
 
 }
