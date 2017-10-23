@@ -127,7 +127,8 @@ public class RealTimeWarn {
 							int n = random.nextInt(150)+100;
 							
 							//String field = "TAG2"; //测点字段
-							final int index = 353;
+							//final int index = 353;
+							final int index = 3;
 							String str = t.next();
 							String[] ss = str.split(",");
 							double val = Double.parseDouble(ss[index]);
