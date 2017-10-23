@@ -10,7 +10,7 @@ import kafka.producer.ProducerConfig;
 public class KafkaProducer{  
       
     private final Producer<String, String> producer;  
-    public final static String TOPIC = "test6";
+    public final static String TOPIC = "test_topic";
   
     private KafkaProducer(){  
           
@@ -36,7 +36,7 @@ public class KafkaProducer{
   
     void produce() {  
         int messageNo = 1;  
-        final int COUNT = 101;  
+        final int COUNT = 1001;  
   
         int messageCount = 0;
         Random random = new Random();
