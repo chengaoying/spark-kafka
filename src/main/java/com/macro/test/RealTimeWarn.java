@@ -114,6 +114,8 @@ public class RealTimeWarn {
 
 					@Override
 					public void call(Iterator<String> t) throws Exception {
+						HiveContext hiveContext = new HiveContext(rdd.context());
+						
 						while(t.hasNext()){
 							
 							/**
@@ -151,7 +153,6 @@ public class RealTimeWarn {
 							 * 与过去某一时刻对比
 							 */
 							String time = "2015-11-30 12:12:12";
-							HiveContext hiveContext = new HiveContext(rdd.context());
 							DataFrame df = hiveContext.sql("select * from table_1");
 							df.show();
 						}
