@@ -194,7 +194,7 @@ public class SparkETL {
 							final int index = 353;
 							String str = t.next();
 							String[] ss = str.split(",");
-							int val = Integer.parseInt(ss[index]);
+							double val = Double.parseDouble(ss[index]);
 							
 							//大于阈值则告警，存入数据库
 							if(val > n){
