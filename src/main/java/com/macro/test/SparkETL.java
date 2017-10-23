@@ -197,24 +197,19 @@ public class SparkETL {
 				public Boolean call(Tuple2<String, Iterable<String>> t) throws Exception {
 					Set<String> sets = new HashSet<String>();
 					String value = "";
-					String v2="";
 					for (String str : t._2) {
-						String[] ss = str.split("|");
+						String _str = str.replace("|", ",");
+						String[] ss = _str.split(",");
 						sets.add(ss[index]);
-						v2 += ss[index];
-						value = str;
+						value = _str;
 					}
 					
 					//如果集合大小等于1，则说明集合中的数值都相同
 					if(sets.size()==1){
-						String _value = v2 +" "+ value.replace("|", ",");
-						/*Record record = new Record();
-						record.setValue(_value);*/
-						
 						String sql = "INSERT INTO record(val) VALUES(?)";
 						
 						List<Object[]> paramsList = new ArrayList<Object[]>();
-						Object[] params = new Object[]{_value};
+						Object[] params = new Object[]{value};
 						paramsList.add(params);
 						
 						JDBCUtils jdbcUtils = JDBCUtils.getInstance();
