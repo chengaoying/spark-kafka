@@ -44,7 +44,7 @@ public class KafkaProducer{
             String key = String.valueOf(messageNo);
             int n = random.nextInt(10);
             int m = random.nextInt(59);
-            String data = "2015-11-30 12:0"+n+":"+m+",130,1,2,3,2,"+n+",123.2123,123.2124,123.2125,123.2126,123.2127";
+            String data = "2015-11-30 12:0"+n+":"+m+",130,1,2,3,2,"+m+",123.2123,123.2124,123.2125,123.2126,123.2127";
             producer.send(new KeyedMessage<String, String>(TOPIC, key ,data));  
             System.out.println(data);  
             messageNo ++;  
