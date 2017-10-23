@@ -90,6 +90,7 @@ public class RealTimeWarn {
 					}
         		});
         
+        rowDStream.print();
         
         /**
          * 告警：
