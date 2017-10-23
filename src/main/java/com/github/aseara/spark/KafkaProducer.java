@@ -1,7 +1,8 @@
 package com.github.aseara.spark;
 
 import java.util.Properties;
-  
+import java.util.Random;
+
 import kafka.javaapi.producer.Producer;  
 import kafka.producer.KeyedMessage;  
 import kafka.producer.ProducerConfig;  
@@ -37,10 +38,12 @@ public class KafkaProducer{
         int messageNo = 1;  
         final int COUNT = 101;  
   
-        int messageCount = 0;  
+        int messageCount = 0;
+        Random random = new Random();
         while (messageNo < COUNT) {  
-            String key = String.valueOf(messageNo);  
-            String data = "2015-10-26 16:23:00,130,1,2,3,2,4,123.2123,123.2124,123.2125,123.2126,123.2127";
+            String key = String.valueOf(messageNo);
+            int n = random.nextInt(59);
+            String data = "2015-11-30 12:"+n+":00,130,1,2,3,2,4,123.2123,123.2124,123.2125,123.2126,123.2127";
             producer.send(new KeyedMessage<String, String>(TOPIC, key ,data));  
             System.out.println(data);  
             messageNo ++;  
