@@ -50,7 +50,7 @@ public class SparkETL {
     	
     	log.warn("启动流处理测试程序");
     	
-        SparkConf sparkConf = new SparkConf().setAppName("KafkaToSparkStreaming");
+        SparkConf sparkConf = new SparkConf().setMaster("local[*]").setAppName("KafkaToSparkStreaming");
         final String checkpointDir = hdfs_uri + "/tmp/streaming_checkpoint";
         
         JavaStreamingContext jssc = new JavaStreamingContext(sparkConf, Durations.seconds(5));
