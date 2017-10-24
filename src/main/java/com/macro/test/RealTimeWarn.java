@@ -123,7 +123,7 @@ public class RealTimeWarn {
 							/**
 							 * 阈值告警
 							 */
-							//随机生成一个阈值，值大于200则报警
+							//随机生成一个阈值，值大于阈值则报警
 							Random random = new Random();
 							int n = random.nextInt(150)+100;
 							
