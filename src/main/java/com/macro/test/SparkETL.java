@@ -40,11 +40,17 @@ public class SparkETL {
 	protected static String start_time = ConfigurationManager.getProperty("kafka.startTime");
 	protected static String end_time = ConfigurationManager.getProperty("kafka.endTime");
 	
-	protected static String topic = "test_topic";
+	//protected static String topic = "test_topic";
 	
 	public static void main(String[] args) throws Exception {
     	
     	log.warn("启动Spark ETL处理程序");
+    	
+    	if(args.length < 1){
+    		System.err.println("Usage: SparkETL <topic>");
+    	    System.exit(1);
+    	}
+    	String topic = args[0];
     	
         SparkConf sparkConf = new SparkConf().setMaster("local[*]").setAppName("SparkETL");
         final String checkpointDir = hdfs_uri + "/tmp/SparkETL_checkpoint";
@@ -150,17 +156,20 @@ public class SparkETL {
         /**
          * 数据推送到Kafka流中
          */
-        new JavaDStreamKafkaWriter(rowDStream,"topic_1",true).writeToKafka();
+        saveDataToKafka(rowDStream,topic);
         
         /**
          * 数据存入HDFS中
          */
-  		//saveDataToHDFS(rowDStream);
-        rowDStream.print();
-        //rowDStream.dstream().saveAsTextFiles(hdfs_uri + "/tmp/data/kafka/", "kafkaData");
+        //rowDStream.print();
+        rowDStream.dstream().saveAsTextFiles(hdfs_uri + "/tmp/data/" + topic + "/", "kafkaData");
         
         jssc.start();
         jssc.awaitTermination();
     }
+
+	private static void saveDataToKafka(JavaDStream<String> rowDStream,String topic) {
+		new JavaDStreamKafkaWriter(rowDStream,topic+"_1",true).writeToKafka();
+	}
 
 }
