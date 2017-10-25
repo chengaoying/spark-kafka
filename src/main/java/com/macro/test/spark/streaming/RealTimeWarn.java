@@ -11,6 +11,8 @@ import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.api.java.function.VoidFunction2;
+import org.apache.spark.sql.Row;
+import org.apache.spark.sql.hive.HiveContext;
 import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.streaming.Durations;
@@ -53,6 +55,7 @@ public class RealTimeWarn {
         
         JavaStreamingContext jssc = new JavaStreamingContext(sparkConf, Durations.seconds(5));
         jssc.checkpoint(checkpointDir);
+        HiveContext hiveContext = new HiveContext(jssc.sparkContext());
 
         // 构建kafka参数map
         // 主要要放置的就是，你要连接的kafka集群的地址（broker集群的地址列表）
@@ -88,6 +91,9 @@ public class RealTimeWarn {
 					}
         		});
         
+        Row[] results = hiveContext.sql("SELECT key, value FROM src").collect();
+        System.out.println(results.toString());
+        
         /**
          * 告警：
          */
@@ -95,7 +101,7 @@ public class RealTimeWarn {
         realTimeWarn1(rowDStream);
         
         //2.阈值、关联规则、与过去某一时刻对比
-        realTimeWarn2(rowDStream);
+        realTimeWarn2(rowDStream,hiveContext);
         
         rowDStream.print();
         
@@ -103,7 +109,7 @@ public class RealTimeWarn {
         jssc.awaitTermination();
     }
 
-	private static void realTimeWarn2(JavaDStream<String> rowDStream) {
+	private static void realTimeWarn2(JavaDStream<String> rowDStream,final HiveContext hiveContext) {
 		rowDStream.foreachRDD(new VoidFunction2<JavaRDD<String>,Time>() {
 			private static final long serialVersionUID = 1L;
 
@@ -153,6 +159,8 @@ public class RealTimeWarn {
 							 * 与过去某一时刻对比
 							 */
 							//String time = "2015-11-30 12:12:12";
+							Row[] results = hiveContext.sql("SELECT key, value FROM src").collect();
+					        System.out.println(results.toString());
 						}
 					}
 					
@@ -192,7 +200,6 @@ public class RealTimeWarn {
 									}});
 							}
 						});
-						
 						return false;
 					}
 				});
