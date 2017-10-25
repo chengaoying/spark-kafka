@@ -91,6 +91,7 @@ public class RealTimeWarn {
 					}
         		});
         
+        hiveContext.sql("use default");
         Row[] results = hiveContext.sql("SELECT key, value FROM src").collect();
         System.out.println(results.toString());
         
