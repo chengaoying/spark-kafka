@@ -12,9 +12,9 @@ public class SparkSQLHiveContextExample {
         JavaSparkContext ctx = new JavaSparkContext(sparkConf);
 
         HiveContext hiveContext = new org.apache.spark.sql.hive.HiveContext(ctx.sc());
-        hiveContext.sql("CREATE TABLE IF NOT EXISTS src (key INT, value STRING)");
+        hiveContext.sql("CREATE TABLE IF NOT EXISTS src (key INT, value STRING) ROW FORMAT DELIMITED FIELDS TERMINATED BY \",\"");
         hiveContext.sql("LOAD DATA LOCAL INPATH '/tmp/files/kv1.txt' INTO TABLE src");
-        Row[] results = hiveContext.sql("FROM src SELECT key, value").collect();
+        Row[] results = hiveContext.sql("SELECT key, value FROM src").collect();
 
         System.out.println(results.toString());
     }
