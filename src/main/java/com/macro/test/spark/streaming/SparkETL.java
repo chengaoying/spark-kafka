@@ -1,4 +1,4 @@
-package com.macro.test;
+package com.macro.test.spark.streaming;
 
 import kafka.serializer.StringDecoder;
 
@@ -52,7 +52,7 @@ public class SparkETL {
     	}
     	String topic = args[0];
     	
-        SparkConf sparkConf = new SparkConf()/*.setMaster("local[*]")*/.setAppName("SparkETL");
+        SparkConf sparkConf = new SparkConf().setMaster("local[*]").setAppName("SparkETL");
         final String checkpointDir = hdfs_uri + "/tmp/SparkETL_checkpoint";
         
         JavaStreamingContext jssc = new JavaStreamingContext(sparkConf, Durations.seconds(5));
@@ -65,7 +65,7 @@ public class SparkETL {
         Map<String, String> kafkaParams = new HashMap<String, String>();
         kafkaParams.put("metadata.broker.list",broker_list);
         kafkaParams.put("group.id","test_group1");
-        //kafkaParams.put("auto.offset.reset","smallest");
+        kafkaParams.put("auto.offset.reset","smallest");
         
         // 构建topic set
         Set<String> topics = new HashSet<String>();
@@ -100,7 +100,6 @@ public class SparkETL {
         
         /** 数据清洗：
          * 	1.过滤时间不符合标准UTC时间
-         *  2.条件过滤：time>2015-11-30 11:59:59 && time<2015-11-30 14:00:00
          */
         JavaDStream<String> filterLogDStream = logDStream.filter(
 			new Function<String, Boolean>() {
@@ -110,8 +109,8 @@ public class SparkETL {
 				public Boolean call(String str) throws Exception {
 					String[] ss = str.split(",");
 					if(ss != null && ss.length > 1 
-							&& DateUtils.isValidDate(ss[0])
-							&& DateUtils.isInTimePeriod(ss[0], start_time, end_time))
+							&& DateUtils.isValidDate(ss[0]))
+							//&& DateUtils.isInTimePeriod(ss[0], start_time, end_time))
 						return true;
 					else
 						return false;
@@ -119,7 +118,7 @@ public class SparkETL {
 			});
 
         /** 数据清洗：
-         * 	3.去重：首先转换诚JavaPairDStream，然后使用reduceBykey去重
+         * 	2.去重：首先转换诚JavaPairDStream，然后使用reduceBykey去重
          */
         JavaPairDStream<String,String> distinctDStream = filterLogDStream.mapToPair(
         	new PairFunction<String, String, String>() {
@@ -128,7 +127,7 @@ public class SparkETL {
 				@Override
 				public Tuple2<String, String> call(String str) throws Exception {
 					String[] ss = str.split(",");
-					return new Tuple2<String,String>(ss[0],str);
+					return new Tuple2<String,String>(ss[0]+"_"+ss[1],str);
 				}
         	}).reduceByKey(
         	new Function2<String, String, String>() {
@@ -169,7 +168,7 @@ public class SparkETL {
     }
 
 	private static void saveDataToKafka(JavaDStream<String> rowDStream,String topic) {
-		new JavaDStreamKafkaWriter(rowDStream,topic+"_1",true).writeToKafka();
+		new JavaDStreamKafkaWriter(rowDStream,topic,true).writeToKafka();
 	}
 
 }

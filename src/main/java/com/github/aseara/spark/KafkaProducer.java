@@ -10,14 +10,15 @@ import kafka.producer.ProducerConfig;
 public class KafkaProducer{  
       
     private final Producer<String, String> producer;  
-    public final static String TOPIC = "test_topic";
+    public final static String TOPIC = "topic_1";
   
     private KafkaProducer(){  
           
         Properties props = new Properties();  
           
         // 此处配置的是kafka的broker地址:端口列表  
-        props.put("metadata.broker.list", "192.168.0.221:9092,192.168.0.222:9092,192.168.0.223:9092");
+        //props.put("metadata.broker.list", "192.168.0.221:9092,192.168.0.222:9092,192.168.0.223:9092");
+        props.put("metadata.broker.list", "10.51.210.231:9092,10.51.210.232:9092,10.51.210.233:9092,10.51.210.234:9092,10.51.210.235:9092");
   
         //配置value的序列化类  
         props.put("serializer.class", "kafka.serializer.StringEncoder");  

@@ -20,19 +20,19 @@ public class KafkaConsumer {
         Properties props = new Properties();  
           
         // zookeeper 配置  
-        props.put("zookeeper.connect", "192.168.0.223:2181");
+        props.put("zookeeper.connect", "10.51.210.231:2181");
   
         // 消费者所在组  
         props.put("group.id", "testgroup");  
   
         // zk连接超时  
-        props.put("zookeeper.session.timeout.ms", "4000");  
+        props.put("zookeeper.session.timeout.ms", "16000");  
         props.put("zookeeper.sync.time.ms", "200");  
         props.put("auto.commit.interval.ms", "1000");  
         props.put("auto.offset.reset", "smallest");  
           
         // 序列化类  
-        props.put("serializer.class", "kafka.serializer.StringEncoder");  
+        //props.put("serializer.class", "kafka.serializer.StringEncoder");  
   
         ConsumerConfig config = new ConsumerConfig(props);  
   
