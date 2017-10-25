@@ -52,7 +52,7 @@ public class SparkETL {
     	}
     	String topic = args[0];
     	
-        SparkConf sparkConf = new SparkConf().setMaster("local[*]").setAppName("SparkETL");
+        SparkConf sparkConf = new SparkConf()/*.setMaster("local[*]")*/.setAppName("SparkETL");
         final String checkpointDir = hdfs_uri + "/tmp/SparkETL_checkpoint";
         
         JavaStreamingContext jssc = new JavaStreamingContext(sparkConf, Durations.seconds(5));

@@ -50,7 +50,7 @@ public class RealTimeWarn {
     	
 		log.warn("启动实时告警处理程序");
     	
-        SparkConf sparkConf = new SparkConf().setMaster("local[*]").setAppName("RealTimeWarn");
+        SparkConf sparkConf = new SparkConf()/*.setMaster("local[*]")*/.setAppName("RealTimeWarn");
         final String checkpointDir = hdfs_uri + "/tmp/RealTimeWarn_checkpoint";
         
         JavaStreamingContext jssc = new JavaStreamingContext(sparkConf, Durations.seconds(5));
