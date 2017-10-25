@@ -86,7 +86,6 @@ public class RealTimeWarn {
 
 					@Override
 					public String call(Tuple2<String, String> tuple) throws Exception {
-						// TODO Auto-generated method stub
 						return tuple._2;
 					}
         		});
